@@ -1,0 +1,80 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { SAMPLE, parsePayload, buildPipe, arcPoint, arcTangent, norm, dot, cross, projector } from "../src/geometry.js";
+import { drawingSVG } from "../src/drawing.js";
+
+const close = (a,b,eps=1e-9)=>assert.ok(Math.abs(a-b)<eps,`${a} != ${b}`);
+const vectorClose = (a,b,eps)=>a.forEach((v,i)=>close(v,b[i],eps));
+const distance = (a,b)=>norm(a.map((v,i)=>v-b[i]));
+const spec=parsePayload(SAMPLE), pipe=buildPipe(spec);
+test("parse all 14 QR v1 fields without guessing the final field",()=>{
+  assert.deepEqual(spec.straights,[112,304,213]);
+  assert.deepEqual(spec.rolls,[-83.14]);
+  assert.equal(spec.reserved,"0");
+  assert.equal(spec.order,"93131310540501");
+  assert.equal(spec.material,"STPG370");
+  assert.equal(parsePayload(SAMPLE.replace(/,0$/,",reserved")).reserved,"reserved");
+});
+test("reject malformed, future-format, blank, NaN and invalid geometry fields",()=>{
+  for(const payload of ["", SAMPLE+",1", SAMPLE.replace("114.3","NaN"), SAMPLE.replace("6.0","100"),SAMPLE.replace(",112,",",,"),SAMPLE.replace(",170,43.4",",10,43.4"),SAMPLE.replace(",100.0",",180")]) {
+    assert.throws(()=>parsePayload(payload));
+  }
+});
+test("N1-N2 remains identical to the approved local 2D drawing",()=>{
+  vectorClose(pipe.lines[0].end,[112,0,0]);
+  vectorClose(pipe.lines[1].start,[228.8048768367519,46.48230593493409,0]);
+  vectorClose(pipe.lines[1].end,[449.68357681192856,255.35690921947867,0]);
+});
+test("every arc meets both straights with correct position and tangent",()=>{
+  pipe.bends.forEach((b,i)=>{
+    const theta=b.angle*Math.PI/180;
+    vectorClose(arcPoint(b,0),pipe.lines[i].end);
+    vectorClose(arcPoint(b,theta),pipe.lines[i+1].start);
+    for(const [t,d] of [[0,pipe.lines[i].direction],[theta,pipe.lines[i+1].direction]]) {
+      vectorClose(arcTangent(b,t),d);
+      const h=1e-7, a=arcPoint(b,t-h),z=arcPoint(b,t+h);
+      vectorClose(z.map((v,j)=>(v-a[j])/(2*h*b.radius)),d,1e-8);
+    }
+  });
+});
+test("correct true lengths, radii, bend angles and developed length",()=>{
+  pipe.lines.forEach((l,i)=>close(distance(l.start,l.end),spec.straights[i]));
+  pipe.bends.forEach(b=>{
+    for(let j=0;j<=100;j++) close(distance(arcPoint(b,b.angle*Math.PI/180*j/100),b.center),b.radius);
+    close(Math.acos(dot(b.incoming,arcTangent(b,b.angle*Math.PI/180)))*180/Math.PI,b.angle);
+  });
+  close(pipe.length,1054.476365051178,1e-8);
+});
+test("signed roll is -83.14 degrees about N2, not a bend angle",()=>{
+  const b=pipe.bends[0], t=b.angle*Math.PI/180;
+  const transported=b.incoming.map((v,i)=>-Math.sin(t)*v+Math.cos(t)*b.normal[i]);
+  const current=pipe.bends[1].normal,d=pipe.lines[1].direction;
+  close(Math.atan2(dot(d,cross(transported,current)),dot(transported,current))*180/Math.PI,-83.14);
+  assert.ok(pipe.lines[2].end[2]<-400);
+});
+test("0/180 rolls stay planar; reversing a nonzero roll mirrors Z only",()=>{
+  for(const roll of [0,180,-180]) {
+    const model=buildPipe({...spec,rolls:[roll]});
+    model.lines.forEach(l=>close(l.end[2],0));
+  }
+  const reverse=buildPipe(spec,-1);
+  pipe.lines.forEach((l,i)=>vectorClose(reverse.lines[i].end,[l.end[0],l.end[1],-l.end[2]]));
+});
+test("geometry core accepts additional bends without changing QR v1 parsing",()=>{
+  const extended=buildPipe({...spec,straights:[112,304,213,273,109],
+    bends:[...spec.bends,{radius:170,angle:90},{radius:170,angle:74.1}],rolls:[-83.14,180,-88.27]});
+  assert.equal(extended.bends.length,4);
+  close(extended.length,1923.370866480036);
+});
+test("isometric projects all three axes at equal scale",()=>{
+  const project=projector();
+  for(const axis of [[1,0,0],[0,1,0],[0,0,1]]) close(norm(project(axis)),Math.sqrt(2/3));
+});
+test("SVG includes true dimensions, convention and escaped QR metadata",()=>{
+  const svg=drawingSVG({...spec,part:'<script>alert("x")</script>'},pipe);
+  assert.ok(svg.includes("&lt;script&gt;"));
+  assert.ok(!svg.includes("<script>"));
+  for(const label of ["N1 = 112","N2 = 304","N3 = 213","100°","-83.14","Right-hand"]) assert.ok(svg.includes(label),label);
+  assert.ok(!svg.includes("NaN"));
+  for(const view of ["front","top","side"])assert.ok(!drawingSVG(spec,pipe,{view}).includes("NaN"));
+});
