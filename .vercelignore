@@ -1,0 +1,6 @@
+.venv/
+python/
+tests/
+output/
+dist/
+.github/

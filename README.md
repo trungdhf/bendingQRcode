@@ -32,7 +32,7 @@ npm run build
 start dist\index.html
 ```
 
-Không cần cài Node trên máy chỉ sử dụng HTML đã build. GitHub Actions cũng tạo artifact `bendingQRcode-single-html` sau khi checks thành công.
+Không cần cài Node trên máy chỉ sử dụng HTML đã build. Các kiểm thử chạy bằng lệnh bên dưới; chưa cài GitHub Actions vì quyền kết nối hiện tại không bao gồm `workflow`.
 
 ## QR v1 — 14 trường, hiện chỉ đến N3
 
