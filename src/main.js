@@ -5,7 +5,7 @@ import { drawingSVG } from "./drawing.js";
 
 document.querySelector("#app").innerHTML=`
 <header class="topbar"><div class="brand-mark">B<span>↗</span></div><div class="brand">bending<span>QR</span><small>曲げパイプ図面ワークスペース</small></div><div class="local-badge"><i></i> 端末内で処理 · サーバーに送信しません</div></header>
-<main><div class="intro"><div><p class="eyebrow">QRコードから図面を作成</p><h1>QRを読み取り、正確な配管形状を作成。</h1><p>カメラでQRコードをスキャンすると、アイソメ図と実寸を表示します。</p></div><span class="format-tag">QR v1 <b>N1 → N3</b></span></div>
+<main><div class="intro"><div><p class="eyebrow">QRコードから図面を作成</p><h1>QRを読み取り、正確な配管形状を作成。</h1><p>カメラでQRコードをスキャンすると、アイソメ図と実寸を表示します。</p></div><span class="format-tag">QR v1 / v2 <b>N1 → N6</b></span></div>
 <div class="workspace"><aside>
 <section class="card input-card"><div class="section-title"><span>01</span><h2>QRコードをスキャン</h2></div>
 <div class="camera-frame"><video id="camera" autoplay muted playsinline aria-label="カメラ映像"></video><div class="camera-placeholder" id="camera-placeholder"><span>▣</span><strong>カメラは停止中です</strong><small>下のボタンを押してスキャンを開始してください</small></div><div class="scan-frame" aria-hidden="true"></div></div>
@@ -34,7 +34,7 @@ function render() {
   const rows=[
     ...spec.straights.map((n,i)=>[`N${i+1} · 直管長`,`${n} mm`]),
     ...spec.bends.map((b,i)=>[`B${i+1} · 曲げ半径 / 曲げ角度`,`R${b.radius} / ${b.angle}°`]),
-    ["ネレ1 · ねじり角",`${spec.rolls[0]}°`],
+    ...spec.rolls.map((roll,i)=>[`ねじり角${i+1}`,`${roll}°`]),
     ["展開長",`${model.length.toFixed(2)} mm`],
     ["予備項目 (未定義)",spec.reserved],
   ];

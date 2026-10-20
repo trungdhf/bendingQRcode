@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import QRCode from "qrcode";
-import { SAMPLE } from "../src/geometry.js";
+import { SAMPLE, parsePayload, buildPipe } from "../src/geometry.js";
 import { decodeRGBA } from "../src/qr.js";
 
-function qrImage({rule=false}={}) {
-  const qr=QRCode.create(SAMPLE,{errorCorrectionLevel:"L"});
+function qrImage({rule=false,payload=SAMPLE}={}) {
+  const qr=QRCode.create(payload,{errorCorrectionLevel:"L"});
   const module=5, pad=24, width=qr.modules.size*module+pad*2, height=width;
   const data=new Uint8ClampedArray(width*height*4).fill(255);
   const black=(x,y)=>{
@@ -21,6 +21,14 @@ function qrImage({rule=false}={}) {
 test("reads the complete current QR payload",()=>{
   const image=qrImage();
   assert.equal(decodeRGBA(image.data,image.width,image.height),SAMPLE);
+});
+test("camera QR decoding and drawing accept a 25-field payload",()=>{
+  const payload="6110001601,38-4-N2-411_1,SUS304TP-A,139.8,3.5,420,30.0,335,891,,,,,,,,,,,,,,,,";
+  const image=qrImage({payload});
+  const decoded=decodeRGBA(image.data,image.width,image.height);
+  assert.equal(decoded,payload);
+  const spec=parsePayload(decoded);
+  assert.equal(buildPipe(spec).bends.length,1);
 });
 test("recovers QR touching a dashed form rule without fixed page coordinates",()=>{
   const image=qrImage({rule:true});

@@ -1,6 +1,6 @@
 # bendingQRcode
 
-Quét QR bằng camera và dựng bản vẽ đường tâm ống uốn. **Bản hiện tại hỗ trợ QR đến N3**, đúng với định dạng đang sử dụng; không coi việc chưa có N4/N5 trong QR là lỗi.
+Quét QR bằng camera và dựng bản vẽ đường tâm ống uốn. Hỗ trợ QR v1 (14 trường, tối đa N3) và QR v2 (25 trường, tối đa N6), kể cả QR v2 chỉ có một cung và các trường chưa dùng để trống.
 
 ## Một HTML có làm được không?
 
@@ -11,7 +11,7 @@ Có. Sau build, **`dist/index.html` là một file độc lập** chứa CSS, Ja
 - Ứng dụng chỉ đọc QR trực tiếp từ camera; chức năng tải PDF/ảnh và nhập chuỗi QR thủ công đã được bỏ.
 - Đọc QR thật, **không OCR bảng** và không tự ghép thêm dữ liệu từ bảng in.
 - View isometric làm hình chính khi các cung khác mặt phẳng; có thêm XY/XZ/YZ và đổi hướng nhìn.
-- Ghi kích thước thật N1/N2/N3, R và góc uốn; không đo góc/chiều dài bằng thước trên hình chiếu.
+- Ghi kích thước thật N1–N6, R và góc uốn theo dữ liệu QR; không đo góc/chiều dài bằng thước trên hình chiếu.
 - Tải SVG/PNG hoặc dùng **In / Lưu PDF** của trình duyệt.
 - Có nút dữ liệu mẫu. QR sai định dạng không thay thế bản vẽ cũ, kèm thông báo rõ.
 - Camera tự dừng sau khi quét thành công, khi nhấn Dừng hoặc khi rời tab.
@@ -40,23 +40,39 @@ Không cần cài Node trên máy chỉ sử dụng HTML đã build. Các kiểm
 
 Canvas App có thể dùng control Barcode reader để quét QR trực tiếp bằng camera và vẽ lại đường tâm isometric bằng SVG. Màn hình YAML dùng cấu trúc control tree như mẫu: [power-apps/Bending-QR-Screen.yaml](./power-apps/Bending-QR-Screen.yaml). Luồng này không đọc QR từ PDF/ảnh; muốn hỗ trợ file cần thêm connector hoặc dịch vụ xử lý riêng. Barcode reader cần chạy trong Power Apps mobile hoặc Windows app có camera; không hỗ trợ quét trong trình duyệt.
 
-## QR v1 — 14 trường, hiện chỉ đến N3
+## QR v1 — 14 trường
 
 ```text
 93131310540501,DT11-111-7,STPG370,114.3,6.0,170,43.4,170,100.0,-83.14,112,304,213,0
 ```
 
-| Vị trí | Ý nghĩa |
+| Trường | Ý nghĩa |
 |---|---|
 | 1–3 | O/#, 管番号, 材質 |
 | 4–5 | OD, chiều dày t (mm) |
-| 6–7 | R1, θ1 (mm, độ) |
-| 8–9 | R2, θ2 (mm, độ) |
-| 10 | ネレ1 / góc xoay từ mặt phẳng B1 sang B2 (độ) |
-| 11–13 | N1, N2, N3 — chiều dài đoạn thẳng, không gồm cung (mm) |
+| 6–7 | R1, θ1 |
+| 8–9 | R2, θ2 (có thể để trống nếu chỉ có một cung) |
+| 10 | Góc xoay từ B1 sang B2; để trống khi chỉ có một cung |
+| 11–13 | N1, N2, N3 — chiều dài đoạn thẳng (mm); dùng N1–N2 với một cung |
 | 14 | Trường cuối, hiện giữ nguyên như dữ liệu gốc; **chưa gán ý nghĩa** |
 
-Không tự thêm hậu tố `-E` vào `STPG370` lấy từ QR. Parser từ chối định dạng khác 14 trường để không diễn giải nhầm dữ liệu mở rộng sau này. Core hình học đã nhận danh sách nhiều N/cung/roll; khi có quy cách QR mới, bổ sung parser tương ứng.
+Không tự thêm hậu tố `-E` vào `STPG370` lấy từ QR.
+
+## QR v2 — 25 trường, tối đa N6
+
+QR v2 theo bố cục được dùng trong `pdf-reader`. Các trường cặp R/θ phía sau B1 và các đoạn tiếp theo có thể để trống khi không sử dụng; các cung phải liền nhau từ B1 và mọi cung tiếp theo cần có góc xoay tương ứng.
+
+```text
+作業番号,管番号,材質,外径,肉厚,R1,θ1,N1,N2,R2,θ2,方向1,N3,R3,θ3,方向2,N4,R4,θ4,方向3,N5,R5,θ5,方向4,N6
+```
+
+`方向1`–`方向4` là góc xoay có dấu giữa các mặt phẳng uốn liên tiếp. Ví dụ QR PDF reader có một cung:
+
+```text
+6110001601,38-4-N2-411_1,SUS304TP-A,139.8,3.5,420,30.0,335,891,,,,,,,,,,,,,,,,
+```
+
+Chuỗi ví dụ trên được chấp nhận với một cung và hai đoạn thẳng N1/N2. Parser vẫn giữ QR v1 để tương thích mã cũ.
 
 ## Cách dựng hình đúng tiếp tuyến
 

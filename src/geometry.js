@@ -11,17 +11,76 @@ export function rotate(v, axis, degrees) {
 }
 export function parsePayload(raw) {
   const f = raw.trim().split(",").map(v => v.trim());
-  if (f.length !== 14) throw new Error(`現在のQRコードは14項目 (N3まで) が必要です。項目数: ${f.length}。拡張形式には対応していません。`);
-  if (f.some(v => v === "")) throw new Error("QRコードに空の項目があります。");
-  const number = i => {
+  if (![14, 25].includes(f.length)) throw new Error(`QRコードは14項目または25項目である必要があります。項目数: ${f.length}。`);
+  const number = (i, label) => {
+    if (f[i] === "") throw new Error(`QRコードの${label}が空です。`);
     const v = Number(f[i]);
-    if (!Number.isFinite(v)) throw new Error(`${i+1}番目の項目が有効な数値ではありません。`);
+    if (!Number.isFinite(v)) throw new Error(`QRコードの${label}が有効な数値ではありません。`);
     return v;
   };
+  const pair = (radiusIndex, angleIndex, bendNumber) => {
+    const radius = f[radiusIndex], angle = f[angleIndex];
+    if (!radius && !angle) return null;
+    if (!radius || !angle) throw new Error(`QRコードのB${bendNumber}に半径または角度がありません。`);
+    return {
+      radius: number(radiusIndex, `B${bendNumber}の半径`),
+      angle: number(angleIndex, `B${bendNumber}の曲げ角度`),
+    };
+  };
+  const bends = [], rolls = [], straights = [];
+  let reserved = "";
+  if (f.length === 14) {
+    reserved = f[13];
+    const firstBend = pair(5, 6, 1);
+    if (!firstBend) throw new Error("QRコードのB1データがありません。");
+    bends.push(firstBend);
+    const secondBend = pair(7, 8, 2);
+    if (secondBend) {
+      bends.push(secondBend);
+      rolls.push(number(9, "B1からB2へのねじり角"));
+    } else if (f[9]) {
+      throw new Error("QRコードに曲げがないねじり角があります。");
+    }
+    const straightIndices = [10, 11, 12];
+    for (let i = 0; i <= bends.length; i++) {
+      straights.push(number(straightIndices[i], `N${i+1}の直管長`));
+    }
+    if (straightIndices.slice(bends.length + 1).some(i => f[i])) {
+      throw new Error("QRコードの曲げ数と直管長が一致しません。");
+    }
+  } else {
+    const bendSlots = [
+      { radius: 5, angle: 6, roll: null },
+      { radius: 9, angle: 10, roll: 11 },
+      { radius: 13, angle: 14, roll: 15 },
+      { radius: 17, angle: 18, roll: 19 },
+      { radius: 21, angle: 22, roll: 23 },
+    ];
+    const straightIndices = [7, 8, 12, 16, 20, 24];
+    for (let i = 0; i < bendSlots.length; i++) {
+      const slot = bendSlots[i];
+      const bend = pair(slot.radius, slot.angle, i + 1);
+      if (!bend) {
+        if (f.slice(slot.radius).some(Boolean)) {
+          throw new Error(`QRコードのB${i+1}以降に未対応のデータがあります。`);
+        }
+        break;
+      }
+      bends.push(bend);
+      if (slot.roll !== null) rolls.push(number(slot.roll, `B${i}とB${i+1}のねじり角`));
+    }
+    if (!bends.length) throw new Error("QRコードのB1データがありません。");
+    for (let i = 0; i <= bends.length; i++) {
+      straights.push(number(straightIndices[i], `N${i+1}の直管長`));
+    }
+    if (straightIndices.slice(bends.length + 1).some(i => f[i])) {
+      throw new Error("QRコードの曲げ数と直管長が一致しません。");
+    }
+  }
   const spec = {
-    order: f[0], part: f[1], material: f[2], od: number(3), wall: number(4),
-    bends: [{ radius: number(5), angle: number(6) }, { radius: number(7), angle: number(8) }],
-    rolls: [number(9)], straights: [number(10), number(11), number(12)], reserved: f[13], raw: raw.trim(),
+    order: f[0], part: f[1], material: f[2],
+    od: number(3, "外径"), wall: number(4, "肉厚"),
+    bends, rolls, straights, reserved, raw: raw.trim(),
   };
   validate(spec);
   return spec;
