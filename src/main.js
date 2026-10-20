@@ -10,6 +10,7 @@ document.querySelector("#app").innerHTML=`
 <section class="card input-card"><div class="section-title"><span>01</span><h2>QRコードをスキャン</h2></div>
 <div class="camera-frame"><video id="camera" autoplay muted playsinline aria-label="カメラ映像"></video><div class="camera-placeholder" id="camera-placeholder"><span>▣</span><strong>カメラは停止中です</strong><small>下のボタンを押してスキャンを開始してください</small></div><div class="scan-frame" aria-hidden="true"></div></div>
 <div class="camera-actions"><button id="camera-start" class="primary">カメラを起動してスキャン</button><button id="camera-stop" class="secondary" disabled>停止</button></div>
+<label class="zoom-control" for="camera-zoom"><span id="zoom-label">ズーム</span><input id="camera-zoom" type="range" min="1" max="4" step="0.1" value="1" disabled/><output id="zoom-value" for="camera-zoom">1.0×</output></label>
 <div id="status" class="status" role="status">カメラでQRコードをスキャンします。ブラウザーでカメラへのアクセスを許可してください。</div>
 <button id="sample" class="text-button">サンプルデータを表示: DT11-111-7</button></section>
 <section class="card info-card"><div class="section-title"><span>02</span><h2>QRコードの寸法</h2></div><div class="part-info"><strong id="part"></strong><small id="material"></small></div><div id="parameters"></div><details class="raw-details"><summary>QRコードの内容を表示</summary><pre id="raw"></pre></details></section>
@@ -23,6 +24,7 @@ document.querySelector("#app").innerHTML=`
 const $=id=>document.getElementById(id);
 let spec=parsePayload(SAMPLE), model=buildPipe(spec), view="iso", quarter=0, displaySource="サンプルデータ";
 let cameraStream=null, scanFrame=0, scanTimer=0, scanBusy=false;
+let cameraTrack=null, cameraZoomMode="digital";
 function status(text,error=false) { $("status").textContent=text; $("status").classList.toggle("error",error); }
 function render() {
   model=buildPipe(spec,$("reverse").checked ? -1:1);
@@ -59,11 +61,51 @@ function stopCamera() {
   scanBusy=false;
   if(cameraStream) cameraStream.getTracks().forEach(track=>track.stop());
   cameraStream=null;
+  cameraTrack=null;
   $("camera").srcObject=null;
   $("camera").classList.remove("active");
+  $("camera").style.transform="";
   $("camera-placeholder").hidden=false;
   $("camera-start").disabled=false;
   $("camera-stop").disabled=true;
+  $("camera-zoom").disabled=true;
+  $("camera-zoom").value="1";
+  $("zoom-value").textContent="1.0×";
+  $("zoom-label").textContent="ズーム";
+}
+function configureCameraZoom(track) {
+  const zoom=$("camera-zoom"), capabilities=track.getCapabilities?.()?.zoom;
+  const min=capabilities?.min ?? 1;
+  const max=capabilities?.max ?? 4;
+  zoom.min=String(min);
+  zoom.max=String(Math.max(min,max));
+  zoom.step=String(capabilities?.step ?? 0.1);
+  zoom.value=String(Math.min(Math.max(1,min),Math.max(min,max)));
+  cameraZoomMode=capabilities ? "native" : "digital";
+  zoom.disabled=false;
+  $("zoom-label").textContent=capabilities ? "カメラズーム" : "デジタルズーム";
+  updateCameraZoom();
+}
+async function updateCameraZoom() {
+  const zoom=$("camera-zoom"), value=Number(zoom.value);
+  $("zoom-value").textContent=`${value.toFixed(1)}×`;
+  if(cameraZoomMode==="digital") {
+    $("camera").style.transform=`scale(${value})`;
+    return;
+  }
+  try {
+    await cameraTrack?.applyConstraints({advanced:[{zoom:value}]});
+  } catch {
+    cameraZoomMode="digital";
+    zoom.min="1";
+    zoom.max="4";
+    zoom.step="0.1";
+    zoom.value=String(Math.min(value,4));
+    $("zoom-label").textContent="デジタルズーム";
+    $("zoom-value").textContent=`${Number(zoom.value).toFixed(1)}×`;
+    $("camera").style.transform=`scale(${zoom.value})`;
+    status("カメラの光学ズームに対応していないため、デジタルズームを使用します。");
+  }
 }
 function scanCameraFrame() {
   if(!cameraStream || scanBusy) return;
@@ -71,11 +113,16 @@ function scanCameraFrame() {
   if(video.readyState>=2 && video.videoWidth) {
     scanBusy=true;
     try {
-      const ratio=Math.min(1,1280/video.videoWidth);
+      const zoom=cameraZoomMode==="digital" ? Number($("camera-zoom").value) : 1;
+      const sourceWidth=video.videoWidth/zoom, sourceHeight=video.videoHeight/zoom;
+      const ratio=Math.min(1,1280/sourceWidth);
       const canvas=document.createElement("canvas");
-      canvas.width=Math.max(1,Math.round(video.videoWidth*ratio));
-      canvas.height=Math.max(1,Math.round(video.videoHeight*ratio));
-      canvas.getContext("2d",{willReadFrequently:true}).drawImage(video,0,0,canvas.width,canvas.height);
+      canvas.width=Math.max(1,Math.round(sourceWidth*ratio));
+      canvas.height=Math.max(1,Math.round(sourceHeight*ratio));
+      const sx=(video.videoWidth-sourceWidth)/2, sy=(video.videoHeight-sourceHeight)/2;
+      canvas.getContext("2d",{willReadFrequently:true}).drawImage(
+        video,sx,sy,sourceWidth,sourceHeight,0,0,canvas.width,canvas.height,
+      );
       const raw=decodeCanvas(canvas);
       if(raw) {
         stopCamera();
@@ -111,9 +158,11 @@ async function startCamera() {
       audio:false,
       video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},
     });
+    cameraTrack=cameraStream.getVideoTracks()[0];
     const video=$("camera");
     video.srcObject=cameraStream;
     await video.play();
+    configureCameraZoom(cameraTrack);
     video.classList.add("active");
     $("camera-placeholder").hidden=true;
     $("camera-stop").disabled=false;
@@ -131,6 +180,7 @@ async function startCamera() {
 }
 $("camera-start").addEventListener("click",startCamera);
 $("camera-stop").addEventListener("click",()=>{stopCamera();status("カメラを停止しました。");});
+$("camera-zoom").addEventListener("input",updateCameraZoom);
 $("sample").addEventListener("click",()=>{
   stopCamera();
   try{loadPayload(SAMPLE,"サンプルデータ");status("サンプルデータ DT11-111-7 を表示しています。");}

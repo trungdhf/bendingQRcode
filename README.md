@@ -7,6 +7,7 @@ Quét QR bằng camera và dựng bản vẽ đường tâm ống uốn. **Bản
 Có. Sau build, **`dist/index.html` là một file độc lập** chứa CSS, JavaScript và bộ giải mã QR. Camera chỉ hoạt động trong secure context: chạy ở `localhost` khi phát triển hoặc host ứng dụng bằng HTTPS; mở file trực tiếp bằng `file://` thường không có quyền camera. Không cần Python hay CDN lúc sử dụng, và hình ảnh camera được xử lý cục bộ.
 
 - Bật camera, đưa mã QR vào khung quét rồi cấp quyền camera khi trình duyệt yêu cầu.
+- Có thanh trượt zoom camera; dùng zoom quang học nếu thiết bị hỗ trợ, nếu không sẽ phóng to kỹ thuật số và quét vùng giữa khung hình.
 - Ứng dụng chỉ đọc QR trực tiếp từ camera; chức năng tải PDF/ảnh và nhập chuỗi QR thủ công đã được bỏ.
 - Đọc QR thật, **không OCR bảng** và không tự ghép thêm dữ liệu từ bảng in.
 - View isometric làm hình chính khi các cung khác mặt phẳng; có thêm XY/XZ/YZ và đổi hướng nhìn.
