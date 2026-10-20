@@ -4,8 +4,7 @@ import { decodeRGBA } from "./qr.js";
 import { drawingSVG } from "./drawing.js";
 
 document.querySelector("#app").innerHTML=`
-<header class="topbar"><div class="brand-mark">B<span>↗</span></div><div class="brand">bending<span>QR</span><small>曲げパイプ図面ワークスペース</small></div><div class="intro header-intro"><div><p class="eyebrow">QRコードから図面を作成</p><h1>QRを読み取り、正確な配管形状を作成。</h1><p>カメラでQRコードをスキャンすると、アイソメ図と実寸を表示します。</p></div><span class="format-tag">QR v1 / v2 <b>N1 → N6</b></span></div><div class="local-badge"><i></i> 端末内で処理 · サーバーに送信しません</div></header>
-<main>
+<main class="compact-app">
 <nav class="app-tabs" role="tablist" aria-label="画面を選択">
 <button id="camera-tab" class="app-tab active" type="button" role="tab" aria-selected="true" aria-controls="workspace" data-app-tab="camera">QRカメラ</button>
 <button id="result-tab" class="app-tab" type="button" role="tab" aria-selected="false" aria-controls="workspace" data-app-tab="result">読み取り結果</button>

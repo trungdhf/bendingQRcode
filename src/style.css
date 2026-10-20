@@ -10,4 +10,6 @@
 @media(max-width:720px){.workspace[data-active-tab="result"] #main-column{order:0}.workspace[data-active-tab="result"] aside{order:1}}
 .topbar{height:auto;min-height:82px;padding-top:10px;padding-bottom:10px}.topbar .header-intro{flex:1;min-width:0;align-items:center;gap:18px;margin:0 24px 0 34px}.topbar .header-intro .eyebrow{display:none}.topbar .header-intro h1{font-size:17px;letter-spacing:-.3px;margin:0 0 4px}.topbar .header-intro>div>p:last-child{font-size:10px;margin:0}.topbar .header-intro .format-tag{flex-shrink:0}
 @media(max-width:1000px){.topbar .header-intro{margin-left:20px;margin-right:12px;gap:10px}.topbar .header-intro h1{font-size:15px}.topbar .header-intro>div>p:last-child{font-size:9px}}
-@media(max-width:720px){.topbar{min-height:72px;flex-wrap:wrap;padding:10px 5%}.topbar .header-intro{order:3;flex:1 0 calc(100% - 48px);margin:8px 0 0 48px;display:block}.topbar .header-intro h1{font-size:16px;line-height:1.25;margin-bottom:3px}.topbar .header-intro>div>p:last-child{font-size:10px;line-height:1.4}.topbar .header-intro .format-tag{display:none}}
+.compact-app{padding-top:8px}.compact-app>.app-tabs{margin:0 0 8px}
+.compact-app .app-tabs{gap:3px;padding:3px;border-radius:6px}.compact-app .app-tab{padding:7px 14px;font-size:11px}
+@media(max-width:720px){.compact-app{padding:6px 3% 10px}.compact-app>.app-tabs{margin:0 0 6px}.compact-app .app-tabs{padding:2px;gap:2px}.compact-app .app-tab{padding:6px 10px;font-size:10px}}
