@@ -4,17 +4,21 @@ import { decodeRGBA } from "./qr.js";
 import { drawingSVG } from "./drawing.js";
 
 document.querySelector("#app").innerHTML=`
-<header class="topbar"><div class="brand-mark">B<span>↗</span></div><div class="brand">bending<span>QR</span><small>曲げパイプ図面ワークスペース</small></div><div class="local-badge"><i></i> 端末内で処理 · サーバーに送信しません</div></header>
-<main><div class="intro"><div><p class="eyebrow">QRコードから図面を作成</p><h1>QRを読み取り、正確な配管形状を作成。</h1><p>カメラでQRコードをスキャンすると、アイソメ図と実寸を表示します。</p></div><span class="format-tag">QR v1 / v2 <b>N1 → N6</b></span></div>
-<div class="workspace"><aside>
-<section class="card input-card"><div class="section-title"><span>01</span><h2>QRコードをスキャン</h2></div>
+<header class="topbar"><div class="brand-mark">B<span>↗</span></div><div class="brand">bending<span>QR</span><small>曲げパイプ図面ワークスペース</small></div><div class="intro header-intro"><div><p class="eyebrow">QRコードから図面を作成</p><h1>QRを読み取り、正確な配管形状を作成。</h1><p>カメラでQRコードをスキャンすると、アイソメ図と実寸を表示します。</p></div><span class="format-tag">QR v1 / v2 <b>N1 → N6</b></span></div><div class="local-badge"><i></i> 端末内で処理 · サーバーに送信しません</div></header>
+<main>
+<nav class="app-tabs" role="tablist" aria-label="画面を選択">
+<button id="camera-tab" class="app-tab active" type="button" role="tab" aria-selected="true" aria-controls="workspace" data-app-tab="camera">QRカメラ</button>
+<button id="result-tab" class="app-tab" type="button" role="tab" aria-selected="false" aria-controls="workspace" data-app-tab="result">読み取り結果</button>
+</nav>
+<div id="workspace" class="workspace" data-active-tab="camera" role="tabpanel" aria-labelledby="camera-tab"><aside>
+<section id="camera-card" class="card input-card"><div class="section-title"><span>01</span><h2>QRコードをスキャン</h2></div>
 <div class="camera-frame"><video id="camera" autoplay muted playsinline aria-label="カメラ映像"></video><div class="camera-placeholder" id="camera-placeholder"><span>▣</span><strong>カメラは停止中です</strong><small>下のボタンを押してスキャンを開始してください</small></div><div class="scan-frame" aria-hidden="true"></div></div>
 <div class="camera-actions"><button id="camera-start" class="primary">カメラを起動してスキャン</button><button id="camera-stop" class="secondary" disabled>停止</button></div>
 <label class="zoom-control" for="camera-zoom"><span id="zoom-label">ズーム</span><input id="camera-zoom" type="range" min="1" max="4" step="0.1" value="1" disabled/><output id="zoom-value" for="camera-zoom">1.0×</output></label>
 <div id="status" class="status" role="status">カメラでQRコードをスキャンします。ブラウザーでカメラへのアクセスを許可してください。</div>
 <button id="sample" class="text-button">サンプルデータを表示: DT11-111-7</button></section>
-<section class="card info-card"><div class="section-title"><span>02</span><h2>QRコードの寸法</h2></div><div class="part-info"><strong id="part"></strong><small id="material"></small></div><div id="parameters"></div><details class="raw-details"><summary>QRコードの内容を表示</summary><pre id="raw"></pre></details></section>
-</aside><div class="main-column"><section class="card drawing-card"><div class="drawing-toolbar"><div><span class="live-dot"></span><strong>配管中心線図</strong></div><div class="exports"><button id="svg-export" class="secondary">SVGをダウンロード</button><button id="png-export" class="secondary">PNGをダウンロード</button><button id="print" class="primary">印刷 / PDF保存</button></div></div>
+<section id="result-info" class="card info-card"><div class="section-title"><span>02</span><h2>QRコードの寸法</h2></div><div class="part-info"><strong id="part"></strong><small id="material"></small></div><div id="parameters"></div><details class="raw-details"><summary>QRコードの内容を表示</summary><pre id="raw"></pre></details></section>
+</aside><div id="main-column" class="main-column"><section class="card drawing-card"><div class="drawing-toolbar"><div><span class="live-dot"></span><strong>配管中心線図</strong></div><div class="exports"><button id="svg-export" class="secondary">SVGをダウンロード</button><button id="png-export" class="secondary">PNGをダウンロード</button><button id="print" class="primary">印刷 / PDF保存</button></div></div>
 <div class="view-toolbar"><div class="view-tabs"><button data-view="iso" class="active">アイソメ図</button><button data-view="front">XY</button><button data-view="top">XZ</button><button data-view="side">YZ</button></div><div class="view-controls"><button id="rotate" title="表示方向を90°回転">↻ 表示方向</button><label><input id="points" type="checkbox" checked/> 接続点</label></div></div>
 <div id="drawing"></div><div class="drawing-caption"><span><i class="legend-line"></i> 配管中心線</span><span><i class="legend-dot"></i> 接線点 PC / PT</span><span>単位: mm</span></div></section>
 <section class="card method-card"><div><span class="section-number">03</span><h2>接線連続の幾何計算</h2><p>直管 N → 曲げ R・θ → 次の直管。ねじり角は曲げ角ではなく、曲げ平面を変えます。</p></div><div class="check-list"><span>接続位置の連続性</span><span>曲げ始点の接線連続</span><span>非平面配管のアイソメ図</span></div></section>
@@ -48,6 +52,16 @@ function render() {
 function loadPayload(raw,source) {
   const next=parsePayload(raw);
   spec=next; displaySource=source; $("reverse").checked=false; quarter=0; render();
+  setActiveTab("result");
+}
+function setActiveTab(tab) {
+  const cameraTab=tab==="camera";
+  $("workspace").dataset.activeTab=tab;
+  $("workspace").setAttribute("aria-labelledby",cameraTab ? "camera-tab" : "result-tab");
+  $("camera-tab").classList.toggle("active",cameraTab);
+  $("camera-tab").setAttribute("aria-selected",String(cameraTab));
+  $("result-tab").classList.toggle("active",!cameraTab);
+  $("result-tab").setAttribute("aria-selected",String(!cameraTab));
 }
 function decodeCanvas(canvas) {
   const image=canvas.getContext("2d",{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height);
@@ -181,6 +195,16 @@ async function startCamera() {
 $("camera-start").addEventListener("click",startCamera);
 $("camera-stop").addEventListener("click",()=>{stopCamera();status("カメラを停止しました。");});
 $("camera-zoom").addEventListener("input",updateCameraZoom);
+document.querySelectorAll("[data-app-tab]").forEach(button=>{
+  button.addEventListener("click",()=>setActiveTab(button.dataset.appTab));
+  button.addEventListener("keydown",event=>{
+    if(event.key!=="ArrowLeft" && event.key!=="ArrowRight") return;
+    event.preventDefault();
+    const next=button.dataset.appTab==="camera" ? $("result-tab") : $("camera-tab");
+    setActiveTab(next.dataset.appTab);
+    next.focus();
+  });
+});
 $("sample").addEventListener("click",()=>{
   stopCamera();
   try{loadPayload(SAMPLE,"サンプルデータ");status("サンプルデータ DT11-111-7 を表示しています。");}

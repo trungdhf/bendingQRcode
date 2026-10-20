@@ -306,19 +306,26 @@
               Set(varBqMaxX, Max(colBqPoints, X));
               Set(varBqMinY, Min(colBqPoints, Y));
               Set(varBqMaxY, Max(colBqPoints, Y));
-              Set(varBqSvgWidth, Max(100, varBqMaxX - varBqMinX + 40));
-              Set(varBqSvgHeight, Max(100, varBqMaxY - varBqMinY + 40));
+              Set(varBqSvgWidth, Max(140, varBqMaxX - varBqMinX + 80));
+              Set(varBqSvgHeight, Max(140, varBqMaxY - varBqMinY + 80));
               Set(
                   varBqSvg,
                   "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " &
                   Text(varBqSvgWidth, "0.###", "en-US") & " " &
                   Text(varBqSvgHeight, "0.###", "en-US") &
                   "'><rect width='100%' height='100%' fill='white'/><g fill='none' stroke='#176b81' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 1), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 20, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 20, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 2), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 20, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 20, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 3), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 20, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 20, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 4), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 20, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 20, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 5), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 20, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 20, "0.###", "en-US") & " ") & "'/>" &
+                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 1), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
+                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 2), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
+                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 3), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
+                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 4), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
+                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 5), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
+                  "</g>" &
+                  "<g font-family='Arial,sans-serif' font-size='13' font-weight='700' fill='#204e65' stroke='white' stroke-width='4' paint-order='stroke' text-anchor='middle'>" &
+                  "<text x='" & Text(LookUp(colBqPoints, Piece = 1 && Step = 11).X - varBqMinX + 40, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 1 && Step = 11).Y + 30, "0.###", "en-US") & "'>N1 = " & Text(varBqN1, "0.##", "en-US") & " mm</text>" &
+                  "<text x='" & Text(LookUp(colBqPoints, Piece = 3 && Step = 11).X - varBqMinX + 40, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 3 && Step = 11).Y + 30, "0.###", "en-US") & "'>N2 = " & Text(varBqN2, "0.##", "en-US") & " mm</text>" &
+                  "<text x='" & Text(LookUp(colBqPoints, Piece = 5 && Step = 11).X - varBqMinX + 40, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 5 && Step = 11).Y + 30, "0.###", "en-US") & "'>N3 = " & Text(varBqN3, "0.##", "en-US") & " mm</text>" &
+                  "<text x='" & Text(LookUp(colBqPoints, Piece = 2 && Step = 11).X - varBqMinX + 65, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 2 && Step = 11).Y + 15, "0.###", "en-US") & "'>B1 · R" & Text(varBqR1, "0.##", "en-US") & " / " & Text(varBqA1Deg, "0.##", "en-US") & "°</text>" &
+                  "<text x='" & Text(LookUp(colBqPoints, Piece = 4 && Step = 11).X - varBqMinX - 25, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 4 && Step = 11).Y + 15, "0.###", "en-US") & "'>B2 · R" & Text(varBqR2, "0.##", "en-US") & " / " & Text(varBqA2Deg, "0.##", "en-US") & "°</text>" &
                   "</g></svg>"
               );
               Set(varBqDeveloped, varBqN1 + varBqN2 + varBqN3 + varBqR1 * varBqTheta1 + varBqR2 * varBqTheta2);

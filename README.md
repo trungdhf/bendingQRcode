@@ -38,7 +38,7 @@ Không cần cài Node trên máy chỉ sử dụng HTML đã build. Các kiểm
 
 ## Chuyển sang Power Apps
 
-Canvas App có thể dùng control Barcode reader để quét QR trực tiếp bằng camera và vẽ lại đường tâm isometric bằng SVG. Màn hình YAML dùng cấu trúc control tree như mẫu: [power-apps/Bending-QR-Screen.yaml](./power-apps/Bending-QR-Screen.yaml). Luồng này không đọc QR từ PDF/ảnh; muốn hỗ trợ file cần thêm connector hoặc dịch vụ xử lý riêng. Barcode reader cần chạy trong Power Apps mobile hoặc Windows app có camera; không hỗ trợ quét trong trình duyệt.
+Canvas App có thể dùng control Barcode reader để quét QR trực tiếp bằng camera và vẽ lại đường tâm isometric bằng SVG. Bản vẽ có ghi chú trực tiếp chiều dài N1–N3, bán kính R và góc uốn B1–B2; màn hình YAML dùng cấu trúc control tree như mẫu: [power-apps/Bending-QR-Screen.yaml](./power-apps/Bending-QR-Screen.yaml). Luồng này không đọc QR từ PDF/ảnh; muốn hỗ trợ file cần thêm connector hoặc dịch vụ xử lý riêng. Barcode reader cần chạy trong Power Apps mobile hoặc Windows app có camera; không hỗ trợ quét trong trình duyệt.
 
 ## QR v1 — 14 trường
 
