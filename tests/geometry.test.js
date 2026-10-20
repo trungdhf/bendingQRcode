@@ -106,11 +106,24 @@ test("isometric projects all three axes at equal scale",()=>{
   const project=projector();
   for(const axis of [[1,0,0],[0,1,0],[0,0,1]]) close(norm(project(axis)),Math.sqrt(2/3));
 });
-test("SVG includes true dimensions, convention and escaped QR metadata",()=>{
+test("SVG includes tube and dimension labels without footer notes",()=>{
   const svg=drawingSVG({...spec,part:'<script>alert("x")</script>'},pipe);
   assert.ok(svg.includes("&lt;script&gt;"));
   assert.ok(!svg.includes("<script>"));
-  for(const label of ["N1 = 112","N2 = 304","N3 = 213","100°","-83.14","右手則"]) assert.ok(svg.includes(label),label);
+  assert.ok(svg.includes('class="tube"'));
+  assert.ok(svg.includes('class="pipe-centerline"'));
+  assert.ok(svg.includes('id="tube-fill"'));
+  const tubePath=svg.match(/<path class="tube" d="([^"]+)"/)?.[1];
+  assert.ok(tubePath);
+  assert.equal((tubePath.match(/M/g) ?? []).length,1);
+  for(const label of ["N1 = 112","N2 = 304","N3 = 213","100°"]) assert.ok(svg.includes(label),label);
+  assert.ok(!svg.includes("右手則"));
+  assert.ok(!svg.includes("参考図"));
+  assert.ok(!svg.includes("展開長"));
   assert.ok(!svg.includes("NaN"));
-  for(const view of ["front","top","side"])assert.ok(!drawingSVG(spec,pipe,{view}).includes("NaN"));
+  for(const view of ["front","top","side"]) {
+    const projected=drawingSVG(spec,pipe,{view});
+    assert.ok(projected.includes('class="tube"'));
+    assert.ok(!projected.includes("NaN"));
+  }
 });

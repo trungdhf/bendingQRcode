@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bending QR</string>
+    <string name="title_activity_main">Bending QR</string>
+    <string name="package_name">com.trungdhf.bendingqrcode</string>
+    <string name="custom_url_scheme">com.trungdhf.bendingqrcode</string>
+</resources>

@@ -15,6 +15,7 @@ Có. Sau build, **`dist/index.html` là một file độc lập** chứa CSS, Ja
 - Tải SVG/PNG hoặc dùng **In / Lưu PDF** của trình duyệt.
 - Có nút dữ liệu mẫu. QR sai định dạng không thay thế bản vẽ cũ, kèm thông báo rõ.
 - Camera tự dừng sau khi quét thành công, khi nhấn Dừng hoặc khi rời tab.
+- PWA cache giao diện và bộ giải mã lần đầu có mạng để mở app khi offline; QR và bản vẽ được xử lý ngay trên thiết bị. Camera vẫn cần quyền camera, và cài PWA cần host bằng HTTPS.
 
 ## Chạy / build trên Windows cmd
 
@@ -34,11 +35,24 @@ npm run build
 start dist\index.html
 ```
 
-Không cần cài Node trên máy chỉ sử dụng HTML đã build. Các kiểm thử chạy bằng lệnh bên dưới; chưa cài GitHub Actions vì quyền kết nối hiện tại không bao gồm `workflow`.
+Không cần cài Node trên máy chỉ sử dụng HTML đã build. Để cài lên màn hình chính và chạy offline, host thư mục `dist` trên HTTPS, mở website khi có mạng để service worker lưu ứng dụng, sau đó chọn **Chia sẻ → Thêm vào Màn hình chính** trong Safari (iPhone) hoặc **Install app / Add to Home screen** trong Chrome (Android). Mở ứng dụng đã cài ít nhất một lần khi còn mạng để hoàn tất cache. Sau đó giao diện, bộ giải mã QR và dựng hình chạy offline; camera vẫn dùng camera thiết bị và cần quyền truy cập. Không mở `dist\index.html` bằng `file://`, vì service worker và quyền camera yêu cầu HTTPS (ngoại trừ localhost khi phát triển). Các kiểm thử chạy bằng lệnh bên dưới; chưa cài GitHub Actions vì quyền kết nối hiện tại không bao gồm `workflow`.
+
+## Cài ứng dụng Android bằng APK
+
+Ứng dụng Android được đóng gói bằng Capacitor. APK dùng camera CameraX và Google ML Kit native để lấy nét, nhận dạng QR; bản web vẫn dùng jsQR. Giao diện, ML Kit và bộ giải mã được nhúng trong APK nên quét QR, dựng hình và xem kích thước hoạt động offline; không cần mở web server. Ứng dụng yêu cầu quyền camera khi quét lần đầu.
+
+Để build APK debug trên Windows, cần Node.js 22, JDK 17 trở lên và Android SDK Platform 36:
+
+```cmd
+npm ci
+npm run android:apk
+```
+
+APK cài thử được tạo tại `android\app\build\outputs\apk\debug\app-debug.apk`. Chép file này vào Android và mở để cài (cho phép cài ứng dụng từ nguồn này khi Android hỏi). Đây là APK debug; nếu phát hành rộng rãi hoặc đưa lên Play Store thì cần ký APK release riêng. Nếu đã có cáp USB và bật USB debugging, có thể cài bằng `adb install -r android\app\build\outputs\apk\debug\app-debug.apk`.
 
 ## Chuyển sang Power Apps
 
-Canvas App có thể dùng control Barcode reader để quét QR trực tiếp bằng camera và vẽ lại đường tâm isometric bằng SVG. Bản vẽ có ghi chú trực tiếp chiều dài N1–N3, bán kính R và góc uốn B1–B2; màn hình YAML dùng cấu trúc control tree như mẫu: [power-apps/Bending-QR-Screen.yaml](./power-apps/Bending-QR-Screen.yaml). Luồng này không đọc QR từ PDF/ảnh; muốn hỗ trợ file cần thêm connector hoặc dịch vụ xử lý riêng. Barcode reader cần chạy trong Power Apps mobile hoặc Windows app có camera; không hỗ trợ quét trong trình duyệt.
+Canvas App dùng control Barcode reader để quét QR bằng camera và hiển thị SVG ống có thân tô chuyển sắc, đường tâm, nhãn chiều dài N, bán kính R và góc uốn. Màn hình YAML hỗ trợ QR v1 (14 trường) và QR v2 (25 trường), tối đa 5 cung; bố cục, cỡ chữ và vùng hình vẽ co giãn theo chiều rộng/chiều cao để dùng trên điện thoại; xem [power-apps/Bending-QR-Screen.yaml](./power-apps/Bending-QR-Screen.yaml). Luồng này không đọc QR từ PDF/ảnh; muốn hỗ trợ file cần thêm connector hoặc dịch vụ xử lý riêng. Barcode reader cần chạy trong Power Apps mobile hoặc Windows app có camera; không hỗ trợ quét trong trình duyệt.
 
 ## QR v1 — 14 trường
 

@@ -1,184 +1,184 @@
 - bqRoot:
-    Control: GroupContainer
+    Control: GroupContainer@1.5.0
     Variant: ManualLayout
     Properties:
-      X: =0
-      Y: =0
-      Width: =Parent.Width
-      Height: =Parent.Height
       Fill: =RGBA(243, 246, 247, 1)
+      Height: =Parent.Height
+      Width: =Parent.Width
     Children:
       - bqHeader:
-          Control: GroupContainer
+          Control: GroupContainer@1.5.0
           Variant: ManualLayout
           Properties:
-            X: =0
-            Y: =0
-            Width: =Parent.Width
-            Height: =72
             Fill: =RGBA(23, 60, 80, 1)
+            Height: =32
+            Width: =Parent.Width
           Children:
             - bqTitle:
-                Control: ModernText
+                Control: ModernText@1.0.0
                 Properties:
-                  Text: ="Bending QR · 曲げパイプ図面"
-                  X: =20
-                  Y: =12
-                  Width: =Parent.Width - 40
-                  Height: =48
-                  Size: =22
-                  FontWeight: =FontWeight.Bold
                   Color: =RGBA(255, 255, 255, 1)
+                  FontWeight: =FontWeight.Bold
+                  Height: =30
+                  Size: =If(App.Width < 600, 16, 19)
+                  Text: ="Bending QR · 曲げパイプ図面 R1"
+                  Width: =Parent.Width - 24
+                  X: =12
       - bqIntro:
-          Control: ModernText
+          Control: ModernText@1.0.0
           Properties:
-            Text: ="カメラでQRコードを読み取り、アイソメ図を作成します。"
-            X: =20
-            Y: =88
-            Width: =Parent.Width - 40
-            Height: =32
-            Size: =14
             Color: =RGBA(70, 95, 108, 1)
+            Size: =If(App.Width < 600, 12, 14)
+            Text: ="14項目/25項目のQRコードを読み取り、最大5曲げのアイソメ図を作成します。"
+            Width: =Parent.Width - 24
+            X: =12
+            Y: =42
       - bqScanner:
-          Control: BarcodeReader
+          Control: BarcodeReader@1.0.25
           Properties:
-            Text: ="カメラでQRコードをスキャン"
             BarcodeType: ='Microsoft.BarcodeReader.BarcodeType'.QR
+            Height: =44
             OnScan: |-
               =If(
                   IsEmpty(bqScanner.Barcodes),
                   Notify("QRコードが見つかりません。", NotificationType.Error),
                   Set(varBqRaw, First(bqScanner.Barcodes).Value);
                   Set(varBqFields, Split(Trim(varBqRaw), ","));
+                  Set(varBqFieldCount, CountRows(varBqFields));
                   If(
-                      CountRows(varBqFields) <> 14,
-                      Set(varBqStatus, "QRコードは14項目である必要があります。現在の項目数: " & Text(CountRows(varBqFields)) & "。");
+                      !(varBqFieldCount = 14 || varBqFieldCount = 25),
+                      Set(varBqStatus, "QRコードは14項目または25項目である必要があります。現在の項目数: " & Text(varBqFieldCount) & "。");
                       Notify(varBqStatus, NotificationType.Error),
                       If(
-                          CountIf(varBqFields, IsBlank(Trim(Value))) > 0,
-                          Set(varBqStatus, "QRコードに空の項目があります。");
-                          Notify(varBqStatus, NotificationType.Error),
                           IfError(
                               Set(varBqOrder, Trim(Index(varBqFields, 1).Value));
                               Set(varBqPart, Trim(Index(varBqFields, 2).Value));
                               Set(varBqMaterial, Trim(Index(varBqFields, 3).Value));
                               Set(varBqOD, Value(Trim(Index(varBqFields, 4).Value), "en-US"));
                               Set(varBqWall, Value(Trim(Index(varBqFields, 5).Value), "en-US"));
-                              Set(varBqR1, Value(Trim(Index(varBqFields, 6).Value), "en-US"));
-                              Set(varBqA1Deg, Value(Trim(Index(varBqFields, 7).Value), "en-US"));
-                              Set(varBqR2, Value(Trim(Index(varBqFields, 8).Value), "en-US"));
-                              Set(varBqA2Deg, Value(Trim(Index(varBqFields, 9).Value), "en-US"));
-                              Set(varBqRollDeg, Value(Trim(Index(varBqFields, 10).Value), "en-US"));
-                              Set(varBqN1, Value(Trim(Index(varBqFields, 11).Value), "en-US"));
-                              Set(varBqN2, Value(Trim(Index(varBqFields, 12).Value), "en-US"));
-                              Set(varBqN3, Value(Trim(Index(varBqFields, 13).Value), "en-US"));
-                              Set(varBqReserved, Trim(Index(varBqFields, 14).Value));
+                              Clear(colBqBends);
+                              Clear(colBqStraights);
                               If(
-                                  varBqOD <= 0 || varBqWall <= 0 || 2 * varBqWall >= varBqOD ||
-                                  varBqN1 <= 0 || varBqN2 <= 0 || varBqN3 <= 0 ||
-                                  varBqR1 <= varBqOD / 2 || varBqR2 <= varBqOD / 2 ||
-                                  varBqA1Deg <= 0 || varBqA1Deg >= 180 ||
-                                  varBqA2Deg <= 0 || varBqA2Deg >= 180,
-                                  Set(varBqStatus, "寸法が無効です。外径、肉厚、直管長N、曲げ半径R、曲げ角度を確認してください。");
+                                  varBqFieldCount = 14,
+                                  Collect(colBqBends, {Index: 1, Radius: Value(Trim(Index(varBqFields, 6).Value), "en-US"), Angle: Value(Trim(Index(varBqFields, 7).Value), "en-US"), Roll: If(IsBlank(Trim(Index(varBqFields, 8).Value)), Blank(), Value(Trim(Index(varBqFields, 10).Value), "en-US"))});
+                                  Collect(colBqBends, {Index: 2, Radius: If(IsBlank(Trim(Index(varBqFields, 8).Value)), Blank(), Value(Trim(Index(varBqFields, 8).Value), "en-US")), Angle: If(IsBlank(Trim(Index(varBqFields, 9).Value)), Blank(), Value(Trim(Index(varBqFields, 9).Value), "en-US")), Roll: Blank()});
+                                  Collect(colBqStraights, {Index: 1, Length: Value(Trim(Index(varBqFields, 11).Value), "en-US")});
+                                  Collect(colBqStraights, {Index: 2, Length: Value(Trim(Index(varBqFields, 12).Value), "en-US")});
+                                  Collect(colBqStraights, {Index: 3, Length: If(IsBlank(Trim(Index(varBqFields, 13).Value)), Blank(), Value(Trim(Index(varBqFields, 13).Value), "en-US"))}),
+                                  Collect(colBqBends, {Index: 1, Radius: Value(Trim(Index(varBqFields, 6).Value), "en-US"), Angle: Value(Trim(Index(varBqFields, 7).Value), "en-US"), Roll: Blank()});
+                                  Collect(colBqBends, {Index: 2, Radius: If(IsBlank(Trim(Index(varBqFields, 10).Value)), Blank(), Value(Trim(Index(varBqFields, 10).Value), "en-US")), Angle: If(IsBlank(Trim(Index(varBqFields, 11).Value)), Blank(), Value(Trim(Index(varBqFields, 11).Value), "en-US")), Roll: If(IsBlank(Trim(Index(varBqFields, 12).Value)), Blank(), Value(Trim(Index(varBqFields, 12).Value), "en-US"))});
+                                  Collect(colBqBends, {Index: 3, Radius: If(IsBlank(Trim(Index(varBqFields, 14).Value)), Blank(), Value(Trim(Index(varBqFields, 14).Value), "en-US")), Angle: If(IsBlank(Trim(Index(varBqFields, 15).Value)), Blank(), Value(Trim(Index(varBqFields, 15).Value), "en-US")), Roll: If(IsBlank(Trim(Index(varBqFields, 16).Value)), Blank(), Value(Trim(Index(varBqFields, 16).Value), "en-US"))});
+                                  Collect(colBqBends, {Index: 4, Radius: If(IsBlank(Trim(Index(varBqFields, 18).Value)), Blank(), Value(Trim(Index(varBqFields, 18).Value), "en-US")), Angle: If(IsBlank(Trim(Index(varBqFields, 19).Value)), Blank(), Value(Trim(Index(varBqFields, 19).Value), "en-US")), Roll: If(IsBlank(Trim(Index(varBqFields, 20).Value)), Blank(), Value(Trim(Index(varBqFields, 20).Value), "en-US"))});
+                                  Collect(colBqBends, {Index: 5, Radius: If(IsBlank(Trim(Index(varBqFields, 22).Value)), Blank(), Value(Trim(Index(varBqFields, 22).Value), "en-US")), Angle: If(IsBlank(Trim(Index(varBqFields, 23).Value)), Blank(), Value(Trim(Index(varBqFields, 23).Value), "en-US")), Roll: Blank()});
+                                  Collect(colBqStraights, {Index: 1, Length: Value(Trim(Index(varBqFields, 8).Value), "en-US")});
+                                  Collect(colBqStraights, {Index: 2, Length: Value(Trim(Index(varBqFields, 9).Value), "en-US")});
+                                  Collect(colBqStraights, {Index: 3, Length: If(IsBlank(Trim(Index(varBqFields, 13).Value)), Blank(), Value(Trim(Index(varBqFields, 13).Value), "en-US"))});
+                                  Collect(colBqStraights, {Index: 4, Length: If(IsBlank(Trim(Index(varBqFields, 17).Value)), Blank(), Value(Trim(Index(varBqFields, 17).Value), "en-US"))});
+                                  Collect(colBqStraights, {Index: 5, Length: If(IsBlank(Trim(Index(varBqFields, 21).Value)), Blank(), Value(Trim(Index(varBqFields, 21).Value), "en-US"))});
+                                  Collect(colBqStraights, {Index: 6, Length: If(IsBlank(Trim(Index(varBqFields, 25).Value)), Blank(), Value(Trim(Index(varBqFields, 25).Value), "en-US"))})
+                              );
+                              RemoveIf(colBqBends, IsBlank(Radius) && IsBlank(Angle));
+                              RemoveIf(colBqStraights, IsBlank(Length));
+                              Set(varBqBendCount, CountRows(colBqBends));
+                              Set(varBqR1, LookUp(colBqBends, Index = 1).Radius);
+                              Set(varBqA1Deg, LookUp(colBqBends, Index = 1).Angle);
+                              Set(varBqR2, If(varBqBendCount >= 2, LookUp(colBqBends, Index = 2).Radius, 0));
+                              Set(varBqA2Deg, If(varBqBendCount >= 2, LookUp(colBqBends, Index = 2).Angle, 0));
+                              Set(varBqRollDeg, If(varBqBendCount >= 2, If(varBqFieldCount = 14, LookUp(colBqBends, Index = 1).Roll, LookUp(colBqBends, Index = 2).Roll), 0));
+                              Set(varBqN1, LookUp(colBqStraights, Index = 1).Length);
+                              Set(varBqN2, LookUp(colBqStraights, Index = 2).Length);
+                              Set(varBqN3, If(varBqBendCount >= 2, LookUp(colBqStraights, Index = 3).Length, 0));
+                              Set(varBqN4, If(varBqBendCount >= 3, LookUp(colBqStraights, Index = 4).Length, 0));
+                              Set(varBqN5, If(varBqBendCount >= 4, LookUp(colBqStraights, Index = 5).Length, 0));
+                              Set(varBqN6, If(varBqBendCount >= 5, LookUp(colBqStraights, Index = 6).Length, 0));
+                              Set(varBqReserved, If(varBqFieldCount = 14, Trim(Index(varBqFields, 14).Value), ""));
+                              If(
+                                  varBqBendCount < 1 ||
+                                  IsBlank(varBqOrder) || IsBlank(varBqPart) || IsBlank(varBqMaterial) ||
+                                  varBqBendCount <> Max(colBqBends, Index) ||
+                                  CountIf(colBqBends, IsBlank(Radius) || IsBlank(Angle) || Radius <= varBqOD / 2 || Angle <= 0 || Angle >= 180) > 0 ||
+                                  (varBqFieldCount = 25 && CountIf(colBqBends, Index > 1 && Index <= varBqBendCount && IsBlank(Roll)) > 0) ||
+                                  (varBqFieldCount = 14 && varBqBendCount >= 2 && IsBlank(LookUp(colBqBends, Index = 1).Roll)) ||
+                                  CountRows(colBqStraights) <> varBqBendCount + 1 ||
+                                  varBqBendCount + 1 <> Max(colBqStraights, Index) ||
+                                  CountIf(colBqStraights, IsBlank(Length) || Length <= 0) > 0 ||
+                                  varBqOD <= 0 || varBqWall <= 0 || 2 * varBqWall >= varBqOD,
+                                  Set(varBqStatus, "寸法または曲げデータが無効です。QRコードの曲げ、ねじり角、直管長を確認してください。");
                                   Notify(varBqStatus, NotificationType.Error),
-                                  Set(varBqStatus, "QRコードを読み取りました。「図面を作成」を押してください。")
-                              )
-                          ,
+                                  Set(varBqStatus, "QRコードを読み取りました（" & Text(varBqBendCount) & "回曲げ）。「図面を作成」を押してください。")
+                              ),
                               Set(varBqStatus, "QRコードの数値を読み取れません。データ形式を確認してください。");
                               Notify(varBqStatus, NotificationType.Error)
                           )
                       )
                   )
               )
-            X: =20
-            Y: =132
-            Width: =Parent.Width - 40
-            Height: =48
+            Text: ="カメラ"
+            Width: =Parent.Width - 24
+            X: =12
+            Y: =78
       - bqSample:
-          Control: ModernButton
+          Control: ModernButton@1.0.0
           Properties:
-            Text: ="サンプルデータ"
+            Appearance: =ButtonAppearance.Secondary
+            Height: =44
             OnSelect: |-
-              =Set(varBqRaw, "93131310540501,DT11-111-7,STPG370,114.3,6.0,170,43.4,170,100.0,-83.14,112,304,213,0");
+              =Set(varBqRaw, "work,part,material,114.3,6,170,43.4,112,304,170,100,-83.14,213,180,90,180,250,160,74.1,-88.27,275,150,60,45,300");
               Set(varBqFields, Split(varBqRaw, ","));
               Set(varBqOrder, Trim(Index(varBqFields, 1).Value));
               Set(varBqPart, Trim(Index(varBqFields, 2).Value));
               Set(varBqMaterial, Trim(Index(varBqFields, 3).Value));
               Set(varBqOD, Value(Trim(Index(varBqFields, 4).Value), "en-US"));
               Set(varBqWall, Value(Trim(Index(varBqFields, 5).Value), "en-US"));
-              Set(varBqR1, Value(Trim(Index(varBqFields, 6).Value), "en-US"));
-              Set(varBqA1Deg, Value(Trim(Index(varBqFields, 7).Value), "en-US"));
-              Set(varBqR2, Value(Trim(Index(varBqFields, 8).Value), "en-US"));
-              Set(varBqA2Deg, Value(Trim(Index(varBqFields, 9).Value), "en-US"));
-              Set(varBqRollDeg, Value(Trim(Index(varBqFields, 10).Value), "en-US"));
-              Set(varBqN1, Value(Trim(Index(varBqFields, 11).Value), "en-US"));
-              Set(varBqN2, Value(Trim(Index(varBqFields, 12).Value), "en-US"));
-              Set(varBqN3, Value(Trim(Index(varBqFields, 13).Value), "en-US"));
-              Set(varBqReserved, Trim(Index(varBqFields, 14).Value));
+              Set(varBqR1, 170);
+              Set(varBqA1Deg, 43.4);
+              Set(varBqR2, 170);
+              Set(varBqA2Deg, 100);
+              Set(varBqRollDeg, -83.14);
+              Set(varBqN1, 112);
+              Set(varBqN2, 304);
+              Set(varBqN3, 213);
+              Set(varBqN4, 250);
+              Set(varBqN5, 275);
+              Set(varBqN6, 300);
+              Set(varBqReserved, "");
+              ClearCollect(
+                  colBqBends,
+                  {Index: 1, Radius: 170, Angle: 43.4, Roll: Blank()},
+                  {Index: 2, Radius: 170, Angle: 100, Roll: -83.14},
+                  {Index: 3, Radius: 180, Angle: 90, Roll: 180},
+                  {Index: 4, Radius: 160, Angle: 74.1, Roll: -88.27},
+                  {Index: 5, Radius: 150, Angle: 60, Roll: 45}
+              );
+              ClearCollect(
+                  colBqStraights,
+                  {Index: 1, Length: 112},
+                  {Index: 2, Length: 304},
+                  {Index: 3, Length: 213},
+                  {Index: 4, Length: 250},
+                  {Index: 5, Length: 275},
+                  {Index: 6, Length: 300}
+              );
+              Set(varBqBendCount, 5);
               Set(varBqStatus, "サンプルデータを読み込みました。「図面を作成」を押してください。")
-            Appearance: =ButtonAppearance.Secondary
-            X: =20
-            Y: =192
-            Width: =(Parent.Width - 52) / 2
-            Height: =40
-      - bqStatus:
-          Control: ModernText
-          Properties:
-            Text: =Coalesce(varBqStatus, "QRコードは未スキャンです。サンプルデータで試すことができます。")
-            X: =20
-            Y: =240
-            Width: =Parent.Width - 40
-            Height: =42
-            Size: =12
-            Color: =RGBA(80, 105, 118, 1)
-            Wrap: =true
-      - bqPart:
-          Control: ModernText
-          Properties:
-            Text: =If(IsBlank(varBqPart), "部品情報", varBqPart & " · " & varBqMaterial & " · 外径 " & Text(varBqOD) & " × 肉厚 " & Text(varBqWall) & " mm")
-            X: =20
-            Y: =290
-            Width: =Parent.Width - 40
-            Height: =38
-            Size: =16
-            FontWeight: =FontWeight.Bold
-            Color: =RGBA(23, 60, 80, 1)
-      - bqDimensions:
-          Control: ModernText
-          Properties:
-            Text: |-
-              =If(
-                  IsBlank(varBqPart),
-                  "QRコードをスキャンすると、直管長N、曲げ半径R、曲げ角度を表示します。",
-                  "直管長: N1 " & Text(varBqN1) & " mm · N2 " & Text(varBqN2) & " mm · N3 " & Text(varBqN3) &
-                  " mm" & Char(10) &
-                  "曲げ: B1 R" & Text(varBqR1) & " / " & Text(varBqA1Deg) & "° · B2 R" &
-                  Text(varBqR2) & " / " & Text(varBqA2Deg) & "°" & Char(10) &
-                  "ねじり角: " & Text(varBqRollDeg) & "° · 展開長: " &
-                  Text(varBqDeveloped, "0.00") & " mm · 予備項目: " & varBqReserved
-              )
-            X: =20
-            Y: =332
-            Width: =Parent.Width - 40
-            Height: =78
-            Size: =12
-            Color: =RGBA(70, 95, 108, 1)
-            Wrap: =true
+            Text: ="サンプルデータ"
+            Width: =(Parent.Width - 36) / 2
+            X: =12
+            Y: =132
       - bqDrawing:
-          Control: Image
+          Control: Image@2.2.3
           Properties:
+            Height: =Max(260, Parent.Height - 188)
             Image: =If(IsBlank(varBqSvg), Blank(), "data:image/svg+xml;utf8," & EncodeUrl(varBqSvg))
             ImagePosition: =ImagePosition.Fit
-            X: =20
-            Y: =420
-            Width: =Parent.Width - 40
-            Height: =Parent.Height - 440
+            Width: =Parent.Width - 16
+            X: =8
+            Y: =184
       - bqDraw:
-          Control: ModernButton
+          Control: ModernButton@1.0.0
           Properties:
-            Text: ="図面を作成"
             DisplayMode: =If(IsBlank(varBqPart), DisplayMode.Disabled, DisplayMode.Edit)
-            Appearance: =ButtonAppearance.Primary
+            Height: =44
             OnSelect: |-
               =Set(varBqTheta1, varBqA1Deg * Pi() / 180);
               Set(varBqTheta2, varBqA2Deg * Pi() / 180);
@@ -301,36 +301,244 @@
                       )
                   )
               );
+              If(
+                  varBqBendCount >= 3,
+                  Set(varBqTheta2, varBqA2Deg * Pi() / 180);
+                  Set(varBqUNext2, {
+                      X: -Sin(varBqTheta2) * varBqD1.X + Cos(varBqTheta2) * varBqURoll.X,
+                      Y: -Sin(varBqTheta2) * varBqD1.Y + Cos(varBqTheta2) * varBqURoll.Y,
+                      Z: -Sin(varBqTheta2) * varBqD1.Z + Cos(varBqTheta2) * varBqURoll.Z
+                  });
+                  Set(varBqRoll2, LookUp(colBqBends, Index = 3).Roll * Pi() / 180);
+                  Set(varBqU3, {
+                      X: varBqUNext2.X * Cos(varBqRoll2) + (varBqD2.Y * varBqUNext2.Z - varBqD2.Z * varBqUNext2.Y) * Sin(varBqRoll2),
+                      Y: varBqUNext2.Y * Cos(varBqRoll2) + (varBqD2.Z * varBqUNext2.X - varBqD2.X * varBqUNext2.Z) * Sin(varBqRoll2),
+                      Z: varBqUNext2.Z * Cos(varBqRoll2) + (varBqD2.X * varBqUNext2.Y - varBqD2.Y * varBqUNext2.X) * Sin(varBqRoll2)
+                  });
+                  Set(varBqPC3, varBqEnd);
+                  Set(varBqR3, LookUp(colBqBends, Index = 3).Radius);
+                  Set(varBqTheta3, LookUp(colBqBends, Index = 3).Angle * Pi() / 180);
+                  ForAll(
+                      Sequence(21) As q,
+                      With(
+                          {a: ((q.Value - 1) / 20) * varBqTheta3},
+                          With(
+                              {
+                                  x: varBqPC3.X + varBqR3 * (Sin(a) * varBqD2.X + (1 - Cos(a)) * varBqU3.X),
+                                  y: varBqPC3.Y + varBqR3 * (Sin(a) * varBqD2.Y + (1 - Cos(a)) * varBqU3.Y),
+                                  z: varBqPC3.Z + varBqR3 * (Sin(a) * varBqD2.Z + (1 - Cos(a)) * varBqU3.Z)
+                              },
+                              Collect(colBqPoints, {Piece: 6, Step: q.Value, X: (x + y) / Sqrt(2), Y: (-x + y + 2 * z) / Sqrt(6)})
+                          )
+                      )
+                  );
+                  Set(varBqPT3, {
+                      X: varBqPC3.X + varBqR3 * (Sin(varBqTheta3) * varBqD2.X + (1 - Cos(varBqTheta3)) * varBqU3.X),
+                      Y: varBqPC3.Y + varBqR3 * (Sin(varBqTheta3) * varBqD2.Y + (1 - Cos(varBqTheta3)) * varBqU3.Y),
+                      Z: varBqPC3.Z + varBqR3 * (Sin(varBqTheta3) * varBqD2.Z + (1 - Cos(varBqTheta3)) * varBqU3.Z)
+                  });
+                  Set(varBqD3, {
+                      X: Cos(varBqTheta3) * varBqD2.X + Sin(varBqTheta3) * varBqU3.X,
+                      Y: Cos(varBqTheta3) * varBqD2.Y + Sin(varBqTheta3) * varBqU3.Y,
+                      Z: Cos(varBqTheta3) * varBqD2.Z + Sin(varBqTheta3) * varBqU3.Z
+                  });
+                  ForAll(
+                      Sequence(21) As q,
+                      With(
+                          {t: (q.Value - 1) / 20},
+                          With(
+                              {
+                                  x: varBqPT3.X + t * varBqN4 * varBqD3.X,
+                                  y: varBqPT3.Y + t * varBqN4 * varBqD3.Y,
+                                  z: varBqPT3.Z + t * varBqN4 * varBqD3.Z
+                              },
+                              Collect(colBqPoints, {Piece: 7, Step: q.Value, X: (x + y) / Sqrt(2), Y: (-x + y + 2 * z) / Sqrt(6)})
+                          )
+                      )
+                  );
+              );
+              If(
+                  varBqBendCount >= 4,
+                  Set(varBqUNext3, {
+                      X: -Sin(varBqTheta3) * varBqD2.X + Cos(varBqTheta3) * varBqU3.X,
+                      Y: -Sin(varBqTheta3) * varBqD2.Y + Cos(varBqTheta3) * varBqU3.Y,
+                      Z: -Sin(varBqTheta3) * varBqD2.Z + Cos(varBqTheta3) * varBqU3.Z
+                  });
+                  Set(varBqRoll3, LookUp(colBqBends, Index = 4).Roll * Pi() / 180);
+                  Set(varBqU4, {
+                      X: varBqUNext3.X * Cos(varBqRoll3) + (varBqD3.Y * varBqUNext3.Z - varBqD3.Z * varBqUNext3.Y) * Sin(varBqRoll3),
+                      Y: varBqUNext3.Y * Cos(varBqRoll3) + (varBqD3.Z * varBqUNext3.X - varBqD3.X * varBqUNext3.Z) * Sin(varBqRoll3),
+                      Z: varBqUNext3.Z * Cos(varBqRoll3) + (varBqD3.X * varBqUNext3.Y - varBqD3.Y * varBqUNext3.X) * Sin(varBqRoll3)
+                  });
+                  Set(varBqPC4, {
+                      X: varBqPT3.X + varBqN4 * varBqD3.X,
+                      Y: varBqPT3.Y + varBqN4 * varBqD3.Y,
+                      Z: varBqPT3.Z + varBqN4 * varBqD3.Z
+                  });
+                  Set(varBqR4, LookUp(colBqBends, Index = 4).Radius);
+                  Set(varBqTheta4, LookUp(colBqBends, Index = 4).Angle * Pi() / 180);
+                  ForAll(
+                      Sequence(21) As q,
+                      With(
+                          {a: ((q.Value - 1) / 20) * varBqTheta4},
+                          With(
+                              {
+                                  x: varBqPC4.X + varBqR4 * (Sin(a) * varBqD3.X + (1 - Cos(a)) * varBqU4.X),
+                                  y: varBqPC4.Y + varBqR4 * (Sin(a) * varBqD3.Y + (1 - Cos(a)) * varBqU4.Y),
+                                  z: varBqPC4.Z + varBqR4 * (Sin(a) * varBqD3.Z + (1 - Cos(a)) * varBqU4.Z)
+                              },
+                              Collect(colBqPoints, {Piece: 8, Step: q.Value, X: (x + y) / Sqrt(2), Y: (-x + y + 2 * z) / Sqrt(6)})
+                          )
+                      )
+                  );
+                  Set(varBqPT4, {
+                      X: varBqPC4.X + varBqR4 * (Sin(varBqTheta4) * varBqD3.X + (1 - Cos(varBqTheta4)) * varBqU4.X),
+                      Y: varBqPC4.Y + varBqR4 * (Sin(varBqTheta4) * varBqD3.Y + (1 - Cos(varBqTheta4)) * varBqU4.Y),
+                      Z: varBqPC4.Z + varBqR4 * (Sin(varBqTheta4) * varBqD3.Z + (1 - Cos(varBqTheta4)) * varBqU4.Z)
+                  });
+                  Set(varBqD4, {
+                      X: Cos(varBqTheta4) * varBqD3.X + Sin(varBqTheta4) * varBqU4.X,
+                      Y: Cos(varBqTheta4) * varBqD3.Y + Sin(varBqTheta4) * varBqU4.Y,
+                      Z: Cos(varBqTheta4) * varBqD3.Z + Sin(varBqTheta4) * varBqU4.Z
+                  });
+                  ForAll(
+                      Sequence(21) As q,
+                      With(
+                          {t: (q.Value - 1) / 20},
+                          With(
+                              {
+                                  x: varBqPT4.X + t * varBqN5 * varBqD4.X,
+                                  y: varBqPT4.Y + t * varBqN5 * varBqD4.Y,
+                                  z: varBqPT4.Z + t * varBqN5 * varBqD4.Z
+                              },
+                              Collect(colBqPoints, {Piece: 9, Step: q.Value, X: (x + y) / Sqrt(2), Y: (-x + y + 2 * z) / Sqrt(6)})
+                          )
+                      )
+                  );
+              );
+              If(
+                  varBqBendCount >= 5,
+                  Set(varBqUNext4, {
+                      X: -Sin(varBqTheta4) * varBqD3.X + Cos(varBqTheta4) * varBqU4.X,
+                      Y: -Sin(varBqTheta4) * varBqD3.Y + Cos(varBqTheta4) * varBqU4.Y,
+                      Z: -Sin(varBqTheta4) * varBqD3.Z + Cos(varBqTheta4) * varBqU4.Z
+                  });
+                  Set(varBqRoll4, LookUp(colBqBends, Index = 5).Roll * Pi() / 180);
+                  Set(varBqU5, {
+                      X: varBqUNext4.X * Cos(varBqRoll4) + (varBqD4.Y * varBqUNext4.Z - varBqD4.Z * varBqUNext4.Y) * Sin(varBqRoll4),
+                      Y: varBqUNext4.Y * Cos(varBqRoll4) + (varBqD4.Z * varBqUNext4.X - varBqD4.X * varBqUNext4.Z) * Sin(varBqRoll4),
+                      Z: varBqUNext4.Z * Cos(varBqRoll4) + (varBqD4.X * varBqUNext4.Y - varBqD4.Y * varBqUNext4.X) * Sin(varBqRoll4)
+                  });
+                  Set(varBqPC5, {
+                      X: varBqPT4.X + varBqN5 * varBqD4.X,
+                      Y: varBqPT4.Y + varBqN5 * varBqD4.Y,
+                      Z: varBqPT4.Z + varBqN5 * varBqD4.Z
+                  });
+                  Set(varBqR5, LookUp(colBqBends, Index = 5).Radius);
+                  Set(varBqTheta5, LookUp(colBqBends, Index = 5).Angle * Pi() / 180);
+                  ForAll(
+                      Sequence(21) As q,
+                      With(
+                          {a: ((q.Value - 1) / 20) * varBqTheta5},
+                          With(
+                              {
+                                  x: varBqPC5.X + varBqR5 * (Sin(a) * varBqD4.X + (1 - Cos(a)) * varBqU5.X),
+                                  y: varBqPC5.Y + varBqR5 * (Sin(a) * varBqD4.Y + (1 - Cos(a)) * varBqU5.Y),
+                                  z: varBqPC5.Z + varBqR5 * (Sin(a) * varBqD4.Z + (1 - Cos(a)) * varBqU5.Z)
+                              },
+                              Collect(colBqPoints, {Piece: 10, Step: q.Value, X: (x + y) / Sqrt(2), Y: (-x + y + 2 * z) / Sqrt(6)})
+                          )
+                      )
+                  );
+                  Set(varBqPT5, {
+                      X: varBqPC5.X + varBqR5 * (Sin(varBqTheta5) * varBqD4.X + (1 - Cos(varBqTheta5)) * varBqU5.X),
+                      Y: varBqPC5.Y + varBqR5 * (Sin(varBqTheta5) * varBqD4.Y + (1 - Cos(varBqTheta5)) * varBqU5.Y),
+                      Z: varBqPC5.Z + varBqR5 * (Sin(varBqTheta5) * varBqD4.Z + (1 - Cos(varBqTheta5)) * varBqU5.Z)
+                  });
+                  Set(varBqD5, {
+                      X: Cos(varBqTheta5) * varBqD4.X + Sin(varBqTheta5) * varBqU5.X,
+                      Y: Cos(varBqTheta5) * varBqD4.Y + Sin(varBqTheta5) * varBqU5.Y,
+                      Z: Cos(varBqTheta5) * varBqD4.Z + Sin(varBqTheta5) * varBqU5.Z
+                  });
+                  ForAll(
+                      Sequence(21) As q,
+                      With(
+                          {t: (q.Value - 1) / 20},
+                          With(
+                              {
+                                  x: varBqPT5.X + t * varBqN6 * varBqD5.X,
+                                  y: varBqPT5.Y + t * varBqN6 * varBqD5.Y,
+                                  z: varBqPT5.Z + t * varBqN6 * varBqD5.Z
+                              },
+                              Collect(colBqPoints, {Piece: 11, Step: q.Value, X: (x + y) / Sqrt(2), Y: (-x + y + 2 * z) / Sqrt(6)})
+                          )
+                      )
+                  )
+              );
 
               Set(varBqMinX, Min(colBqPoints, X));
               Set(varBqMaxX, Max(colBqPoints, X));
               Set(varBqMinY, Min(colBqPoints, Y));
               Set(varBqMaxY, Max(colBqPoints, Y));
-              Set(varBqSvgWidth, Max(140, varBqMaxX - varBqMinX + 80));
-              Set(varBqSvgHeight, Max(140, varBqMaxY - varBqMinY + 80));
+              Set(varBqScale, Min(820 / Max(1, varBqMaxX - varBqMinX), 390 / Max(1, varBqMaxY - varBqMinY)));
+              Set(varBqOffsetX, 500 - ((varBqMinX + varBqMaxX) / 2) * varBqScale);
+              Set(varBqOffsetY, 360 + ((varBqMinY + varBqMaxY) / 2) * varBqScale);
+              Set(varBqTubeWidth, Min(24, Max(10, varBqOD * varBqScale * 0.22)));
+              Set(varBqDeveloped, Sum(colBqStraights, Length) + Sum(colBqBends, Radius * Angle * Pi() / 180));
+              Set(
+                  varBqSvgPath,
+                  Concat(
+                      Sequence(11) As p,
+                      If(
+                          CountIf(colBqPoints, Piece = p.Value) > 0,
+                          "<path d='" & Concat(
+                              Sort(Filter(colBqPoints, Piece = p.Value), Step, SortOrder.Ascending),
+                              If(Step = 1, "M", "L") &
+                              Text(varBqOffsetX + X * varBqScale, "0.###", "en-US") & " " &
+                              Text(varBqOffsetY - Y * varBqScale, "0.###", "en-US") & " "
+                          ) & "'/>",
+                          ""
+                      )
+                  )
+              );
               Set(
                   varBqSvg,
-                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " &
-                  Text(varBqSvgWidth, "0.###", "en-US") & " " &
-                  Text(varBqSvgHeight, "0.###", "en-US") &
-                  "'><rect width='100%' height='100%' fill='white'/><g fill='none' stroke='#176b81' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 1), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 2), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 3), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 4), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
-                  "<path d='" & Concat(Sort(Filter(colBqPoints, Piece = 5), Step, SortOrder.Ascending), If(Step = 1, "M", "L") & Text(X - varBqMinX + 40, "0.###", "en-US") & " " & Text(varBqMaxY - Y + 40, "0.###", "en-US") & " ") & "'/>" &
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 620' preserveAspectRatio='xMidYMid meet'>" &
+                  "<defs><linearGradient id='pipe' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#e4f3f8'/><stop offset='.38' stop-color='#a9cbd8'/><stop offset='.72' stop-color='#d2e5eb'/><stop offset='1' stop-color='#7898a6'/></linearGradient>" &
+                  "<pattern id='grid' width='24' height='24' patternUnits='userSpaceOnUse'><circle cx='1' cy='1' r='1' fill='#dce7eb'/></pattern>" &
+                  "<marker id='dimArrow' viewBox='0 0 10 10' refX='5' refY='5' markerWidth='5' markerHeight='5' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#517789'/></marker></defs>" &
+                  "<rect width='1000' height='620' rx='24' fill='#fff'/><rect x='20' y='86' width='960' height='500' rx='16' fill='url(#grid)'/>" &
+                  "<text x='36' y='42' font-family='Arial,sans-serif' font-size='25' font-weight='700' fill='#173c50'>" & varBqPart & "</text>" &
+                  "<text x='36' y='68' font-family='Arial,sans-serif' font-size='15' fill='#647f8b'>" & varBqMaterial & " · OD " & Text(varBqOD, "0.##", "en-US") & " × t " & Text(varBqWall, "0.##", "en-US") & " mm</text>" &
+                  "<g fill='none' stroke-linecap='round' stroke-linejoin='round'>" &
+                  "<g stroke='#315f72' stroke-opacity='.18' stroke-width='" & Text(varBqTubeWidth + 7, "0.##", "en-US") & "'>" & varBqSvgPath & "</g>" &
+                  "<g stroke='url(#pipe)' stroke-width='" & Text(varBqTubeWidth, "0.##", "en-US") & "'>" & varBqSvgPath & "</g>" &
+                  "<g stroke='#fff' stroke-opacity='.72' stroke-width='3'>" & varBqSvgPath & "</g>" &
+                  "<g stroke='#087e9a' stroke-width='2.5' stroke-dasharray='9 7' opacity='.95'>" & varBqSvgPath & "</g></g>" &
+                  "<g font-family='Arial,sans-serif' font-size='18' font-weight='700' fill='#204e65' stroke='#fff' stroke-width='6' paint-order='stroke' text-anchor='middle'>" &
+                  Concat(
+                      colBqStraights As n,
+                      With(
+                          {mid: LookUp(colBqPoints, Piece = 2 * n.Index - 1 && Step = 11)},
+                          "<text x='" & Text(varBqOffsetX + mid.X * varBqScale, "0.###", "en-US") &
+                          "' y='" & Text(varBqOffsetY - mid.Y * varBqScale - 25, "0.###", "en-US") &
+                          "'>N" & Text(n.Index) & " = " & Text(n.Length, "0.##", "en-US") & " mm</text>"
+                      )
+                  ) &
+                  Concat(
+                      colBqBends As b,
+                      With(
+                          {mid: LookUp(colBqPoints, Piece = 2 * b.Index && Step = 11)},
+                          "<text x='" & Text(varBqOffsetX + mid.X * varBqScale + 18, "0.###", "en-US") &
+                          "' y='" & Text(varBqOffsetY - mid.Y * varBqScale + 27, "0.###", "en-US") &
+                          "'>B" & Text(b.Index) & " · R" & Text(b.Radius, "0.##", "en-US") & " · " & Text(b.Angle, "0.##", "en-US") & "°</text>"
+                      )
+                  ) &
                   "</g>" &
-                  "<g font-family='Arial,sans-serif' font-size='13' font-weight='700' fill='#204e65' stroke='white' stroke-width='4' paint-order='stroke' text-anchor='middle'>" &
-                  "<text x='" & Text(LookUp(colBqPoints, Piece = 1 && Step = 11).X - varBqMinX + 40, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 1 && Step = 11).Y + 30, "0.###", "en-US") & "'>N1 = " & Text(varBqN1, "0.##", "en-US") & " mm</text>" &
-                  "<text x='" & Text(LookUp(colBqPoints, Piece = 3 && Step = 11).X - varBqMinX + 40, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 3 && Step = 11).Y + 30, "0.###", "en-US") & "'>N2 = " & Text(varBqN2, "0.##", "en-US") & " mm</text>" &
-                  "<text x='" & Text(LookUp(colBqPoints, Piece = 5 && Step = 11).X - varBqMinX + 40, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 5 && Step = 11).Y + 30, "0.###", "en-US") & "'>N3 = " & Text(varBqN3, "0.##", "en-US") & " mm</text>" &
-                  "<text x='" & Text(LookUp(colBqPoints, Piece = 2 && Step = 11).X - varBqMinX + 65, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 2 && Step = 11).Y + 15, "0.###", "en-US") & "'>B1 · R" & Text(varBqR1, "0.##", "en-US") & " / " & Text(varBqA1Deg, "0.##", "en-US") & "°</text>" &
-                  "<text x='" & Text(LookUp(colBqPoints, Piece = 4 && Step = 11).X - varBqMinX - 25, "0.###", "en-US") & "' y='" & Text(varBqMaxY - LookUp(colBqPoints, Piece = 4 && Step = 11).Y + 15, "0.###", "en-US") & "'>B2 · R" & Text(varBqR2, "0.##", "en-US") & " / " & Text(varBqA2Deg, "0.##", "en-US") & "°</text>" &
-                  "</g></svg>"
+                  "<text x='36' y='594' font-family='Arial,sans-serif' font-size='14' fill='#647f8b'>展開長 " & Text(varBqDeveloped, "0.##", "en-US") & " mm　·　寸法単位 mm</text></svg>"
               );
-              Set(varBqDeveloped, varBqN1 + varBqN2 + varBqN3 + varBqR1 * varBqTheta1 + varBqR2 * varBqTheta2);
-              Set(varBqStatus, "図面を作成しました。製作前に、ねじり角の方向が機械の規約と一致することを確認してください。")
-            X: =32 + (Parent.Width - 52) / 2
-            Y: =192
-            Width: =(Parent.Width - 52) / 2
-            Height: =40
+              Set(varBqStatus, "図面を作成しました。")
+            Text: ="図面を作成"
+            Width: =(Parent.Width - 36) / 2
+            X: =24 + (Parent.Width - 36) / 2
+            Y: =132
