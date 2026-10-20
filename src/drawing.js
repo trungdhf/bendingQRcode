@@ -3,6 +3,7 @@ import { arcPoint, projector } from "./geometry.js";
 const esc = s => String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&apos;" }[c]));
 const fmt = n => Number(n.toFixed(2)).toString();
 export function drawingSVG(spec, model, { view="iso", quarter=0, points=true, rollSign=1 } = {}) {
+  const viewName = { iso:"アイソメ図", front:"XY平面", top:"XZ平面", side:"YZ平面" }[view] ?? view.toUpperCase();
   const project = projector(view, quarter);
   const all = model.pieces.flatMap(p=>p.points).map(project);
   const xs=all.map(p=>p[0]), ys=all.map(p=>p[1]);
@@ -37,7 +38,7 @@ export function drawingSVG(spec, model, { view="iso", quarter=0, points=true, ro
     const b=model.bends[i], at=screen(arcPoint(b,b.angle*Math.PI/360));
     const label=[at[0]+(i ? -42:0),at[1]-105];
     body+=line([label[0],label[1]+17],at,"leader",'marker-end="url(#arrow)"');
-    body+=`<text x="${fmt(label[0])}" y="${fmt(label[1])}" class="bend-label"><tspan x="${fmt(label[0])}">B${i+1} · R${fmt(b.radius)}</tspan><tspan x="${fmt(label[0])}" dy="23">${fmt(b.angle)}°</tspan></text>`;
+    body+=`<text x="${fmt(label[0])}" y="${fmt(label[1])}" class="bend-label"><tspan x="${fmt(label[0])}">B${i+1} · R ${fmt(b.radius)}</tspan><tspan x="${fmt(label[0])}" dy="23">${fmt(b.angle)}°</tspan></text>`;
   }
   if(points) for (const {name,point} of model.labels) {
     const p=screen(point);
@@ -49,7 +50,7 @@ export function drawingSVG(spec, model, { view="iso", quarter=0, points=true, ro
     body+=line(origin,end,"triad",'marker-end="url(#axis-arrow)"');
     body+=`<text x="${fmt(origin[0]+q[0]*72)}" y="${fmt(origin[1]-q[1]*72)}" class="axis-label">${name}</text>`;
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" role="img" aria-label="Bản vẽ ống ${esc(spec.part)}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" role="img" aria-label="${esc(spec.part)} の配管図">
   <defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2c647b"/></marker>
   <marker id="axis-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8a9ba5"/></marker>
   <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.7" fill="#dce4e8"/></pattern></defs>
@@ -62,11 +63,11 @@ export function drawingSVG(spec, model, { view="iso", quarter=0, points=true, ro
   </style>
   <rect width="1000" height="660" fill="white"/><rect x="22" y="82" width="956" height="490" fill="url(#grid)"/>
   <text x="34" y="35" fill="#173c50" font-size="22" font-weight="700">${esc(spec.part)}</text>
-  <text x="34" y="60" fill="#718793" font-size="12">${esc(spec.material)} · OD ${fmt(spec.od)} × t${fmt(spec.wall)} · mm · ${view==="iso" ? "ISOMETRIC" : esc(view.toUpperCase())}</text>
-  <text x="966" y="35" text-anchor="end" font-size="11" fill="#718793">CENTERLINE DRAWING · NOT TO SCALE</text>
+  <text x="34" y="60" fill="#718793" font-size="12">${esc(spec.material)} · 外径 ${fmt(spec.od)} × 肉厚 ${fmt(spec.wall)} · mm · ${esc(viewName)}</text>
+  <text x="966" y="35" text-anchor="end" font-size="11" fill="#718793">配管中心線図 · 縮尺なし</text>
   ${body}
   <path d="M34 588H966" stroke="#dce4e8"/>
-  <text x="34" y="612" fill="#173c50" font-size="13">Roll B1 → B2: ${fmt(spec.rolls[0]*rollSign)}° · True N lengths shown · Developed: ${fmt(model.length)} mm</text>
-  <text x="34" y="637" fill="#9b682e" font-size="11">Right-hand roll about travel direction. Confirm machine convention. Reference only, not for fabrication.</text>
+  <text x="34" y="612" fill="#173c50" font-size="13">ねじり角 B1 → B2: ${fmt(spec.rolls[0]*rollSign)}° · 直管長 N は実寸 · 展開長: ${fmt(model.length)} mm</text>
+  <text x="34" y="637" fill="#9b682e" font-size="11">進行方向を軸とする右手則。機械の規約を確認してください。参考図であり、製作指示ではありません。</text>
   </svg>`;
 }

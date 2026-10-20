@@ -1,18 +1,19 @@
 # bendingQRcode
 
-Đọc QR trên PDF/ảnh và dựng bản vẽ đường tâm ống uốn. **Bản hiện tại hỗ trợ QR đến N3**, đúng với định dạng đang sử dụng; không coi việc chưa có N4/N5 trong QR là lỗi.
+Quét QR bằng camera và dựng bản vẽ đường tâm ống uốn. **Bản hiện tại hỗ trợ QR đến N3**, đúng với định dạng đang sử dụng; không coi việc chưa có N4/N5 trong QR là lỗi.
 
 ## Một HTML có làm được không?
 
-Có. Sau build, **`dist/index.html` là một file độc lập** chứa CSS, JavaScript, PDF.js worker và bộ giải mã QR. Có thể tải về rồi mở bằng Chrome/Edge, chọn PDF/ảnh ngay trên máy; không cần Python, server hay CDN lúc sử dụng. Không upload tài liệu lên server.
+Có. Sau build, **`dist/index.html` là một file độc lập** chứa CSS, JavaScript và bộ giải mã QR. Camera chỉ hoạt động trong secure context: chạy ở `localhost` khi phát triển hoặc host ứng dụng bằng HTTPS; mở file trực tiếp bằng `file://` thường không có quyền camera. Không cần Python hay CDN lúc sử dụng, và hình ảnh camera được xử lý cục bộ.
 
-- Chọn PDF/ảnh, kéo thả hoặc dán nội dung QR.
+- Bật camera, đưa mã QR vào khung quét rồi cấp quyền camera khi trình duyệt yêu cầu.
+- Ứng dụng chỉ đọc QR trực tiếp từ camera; chức năng tải PDF/ảnh và nhập chuỗi QR thủ công đã được bỏ.
 - Đọc QR thật, **không OCR bảng** và không tự ghép thêm dữ liệu từ bảng in.
 - View isometric làm hình chính khi các cung khác mặt phẳng; có thêm XY/XZ/YZ và đổi hướng nhìn.
 - Ghi kích thước thật N1/N2/N3, R và góc uốn; không đo góc/chiều dài bằng thước trên hình chiếu.
 - Tải SVG/PNG hoặc dùng **In / Lưu PDF** của trình duyệt.
-- Có nút dữ liệu mẫu. File lỗi không thay thế bản vẽ cũ, kèm thông báo rõ.
-- Giới hạn 25 MB/file, quét tối đa 20 trang PDF đầu tiên. Nếu mã nhỏ/mờ hoặc hỏng, thử ảnh rõ hơn hoặc dán nội dung QR.
+- Có nút dữ liệu mẫu. QR sai định dạng không thay thế bản vẽ cũ, kèm thông báo rõ.
+- Camera tự dừng sau khi quét thành công, khi nhấn Dừng hoặc khi rời tab.
 
 ## Chạy / build trên Windows cmd
 
@@ -33,6 +34,10 @@ start dist\index.html
 ```
 
 Không cần cài Node trên máy chỉ sử dụng HTML đã build. Các kiểm thử chạy bằng lệnh bên dưới; chưa cài GitHub Actions vì quyền kết nối hiện tại không bao gồm `workflow`.
+
+## Chuyển sang Power Apps
+
+Canvas App có thể dùng control Barcode reader để quét QR trực tiếp bằng camera và vẽ lại đường tâm isometric bằng SVG. Màn hình YAML dùng cấu trúc control tree như mẫu: [power-apps/Bending-QR-Screen.yaml](./power-apps/Bending-QR-Screen.yaml). Luồng này không đọc QR từ PDF/ảnh; muốn hỗ trợ file cần thêm connector hoặc dịch vụ xử lý riêng. Barcode reader cần chạy trong Power Apps mobile hoặc Windows app có camera; không hỗ trợ quét trong trình duyệt.
 
 ## QR v1 — 14 trường, hiện chỉ đến N3
 

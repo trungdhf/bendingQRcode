@@ -74,7 +74,7 @@ test("SVG includes true dimensions, convention and escaped QR metadata",()=>{
   const svg=drawingSVG({...spec,part:'<script>alert("x")</script>'},pipe);
   assert.ok(svg.includes("&lt;script&gt;"));
   assert.ok(!svg.includes("<script>"));
-  for(const label of ["N1 = 112","N2 = 304","N3 = 213","100°","-83.14","Right-hand"]) assert.ok(svg.includes(label),label);
+  for(const label of ["N1 = 112","N2 = 304","N3 = 213","100°","-83.14","右手則"]) assert.ok(svg.includes(label),label);
   assert.ok(!svg.includes("NaN"));
   for(const view of ["front","top","side"])assert.ok(!drawingSVG(spec,pipe,{view}).includes("NaN"));
 });

@@ -11,11 +11,11 @@ export function rotate(v, axis, degrees) {
 }
 export function parsePayload(raw) {
   const f = raw.trim().split(",").map(v => v.trim());
-  if (f.length !== 14) throw new Error(`QR hiện tại cần 14 trường (đến N3); nhận được ${f.length}. Chưa hỗ trợ định dạng QR mở rộng.`);
-  if (f.some(v => v === "")) throw new Error("QR có trường trống.");
+  if (f.length !== 14) throw new Error(`現在のQRコードは14項目 (N3まで) が必要です。項目数: ${f.length}。拡張形式には対応していません。`);
+  if (f.some(v => v === "")) throw new Error("QRコードに空の項目があります。");
   const number = i => {
     const v = Number(f[i]);
-    if (!Number.isFinite(v)) throw new Error(`Trường ${i+1} không phải số hợp lệ.`);
+    if (!Number.isFinite(v)) throw new Error(`${i+1}番目の項目が有効な数値ではありません。`);
     return v;
   };
   const spec = {
@@ -27,12 +27,12 @@ export function parsePayload(raw) {
   return spec;
 }
 export function validate(spec) {
-  if (!Array.isArray(spec.straights) || !Array.isArray(spec.bends) || !Array.isArray(spec.rolls)) throw new Error("Thiếu danh sách đoạn thẳng, cung hoặc góc xoay.");
-  if (spec.straights.length !== spec.bends.length+1 || spec.rolls.length !== Math.max(0, spec.bends.length-1)) throw new Error("Số N, cung và góc xoay không khớp.");
-  if (!Number.isFinite(spec.od) || !Number.isFinite(spec.wall) || spec.od <= 0 || spec.wall <= 0 || spec.wall*2 >= spec.od) throw new Error("Ngoại kính hoặc chiều dày không hợp lệ.");
-  if (spec.straights.some(n => !Number.isFinite(n) || n <= 0)) throw new Error("Chiều dài đoạn thẳng phải lớn hơn 0.");
-  if (spec.bends.some(b => !Number.isFinite(b.radius) || !Number.isFinite(b.angle) || b.radius <= spec.od/2 || b.angle <= 0 || b.angle >= 180)) throw new Error("Cung cần R > OD/2 và 0° < góc uốn < 180°.");
-  if (spec.rolls.some(r => !Number.isFinite(r))) throw new Error("Góc xoay không hợp lệ.");
+  if (!Array.isArray(spec.straights) || !Array.isArray(spec.bends) || !Array.isArray(spec.rolls)) throw new Error("直管、曲げ、ねじり角のデータがありません。");
+  if (spec.straights.length !== spec.bends.length+1 || spec.rolls.length !== Math.max(0, spec.bends.length-1)) throw new Error("直管、曲げ、ねじり角の数が一致しません。");
+  if (!Number.isFinite(spec.od) || !Number.isFinite(spec.wall) || spec.od <= 0 || spec.wall <= 0 || spec.wall*2 >= spec.od) throw new Error("外径または肉厚が無効です。");
+  if (spec.straights.some(n => !Number.isFinite(n) || n <= 0)) throw new Error("直管長は0より大きい値にしてください。");
+  if (spec.bends.some(b => !Number.isFinite(b.radius) || !Number.isFinite(b.angle) || b.radius <= spec.od/2 || b.angle <= 0 || b.angle >= 180)) throw new Error("曲げ半径は外径の半分より大きく、曲げ角度は0°より大きく180°未満にしてください。");
+  if (spec.rolls.some(r => !Number.isFinite(r))) throw new Error("ねじり角が無効です。");
 }
 export function arcPoint(b, t) {
   return add(b.start, mul(add(mul(b.incoming, Math.sin(t)), mul(b.normal, 1-Math.cos(t))), b.radius));
@@ -40,7 +40,7 @@ export function arcPoint(b, t) {
 export const arcTangent = (b, t) => add(mul(b.incoming, Math.cos(t)), mul(b.normal, Math.sin(t)));
 export function buildPipe(spec, rollSign = 1) {
   validate(spec);
-  if (![1, -1].includes(rollSign)) throw new Error("Dấu chiều xoay phải là +1 hoặc −1.");
+  if (![1, -1].includes(rollSign)) throw new Error("ねじり方向は+1または-1にしてください。");
   let p = [0, 0, 0], d = [1, 0, 0], u = [0, 1, 0];
   const lines = [], bends = [], pieces = [], labels = [{ name: "S", point: p }];
   for (let i = 0; i < spec.straights.length; i++) {
@@ -62,7 +62,7 @@ export function buildPipe(spec, rollSign = 1) {
     u = add(mul(d, -Math.sin(theta)), mul(u, Math.cos(theta)));
     d = nextD;
   }
-  labels.push({ name: `N${spec.straights.length} end`, point: p });
+  labels.push({ name: `N${spec.straights.length} 終点`, point: p });
   return { lines, bends, pieces, labels, length: spec.straights.reduce((a,b)=>a+b,0) + spec.bends.reduce((s,b)=>s+b.radius*radians(b.angle),0) };
 }
 export function projector(view = "iso", quarter = 0) {

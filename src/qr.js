@@ -84,7 +84,7 @@ function crop(data, width, height, box, margin) {
 }
 
 export function decodeRGBA(data, width, height) {
-  if (data.length !== width*height*4 || width < 1 || height < 1) throw new Error("Dữ liệu ảnh không hợp lệ.");
+  if (data.length !== width*height*4 || width < 1 || height < 1) throw new Error("カメラ画像データが無効です。");
   const direct = jsQR(data,width,height,{ inversionAttempts: "attemptBoth" });
   if (direct) return direct.data;
   for (const box of qrCandidates(data,width,height)) {
